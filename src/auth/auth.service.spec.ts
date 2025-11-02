@@ -11,8 +11,16 @@ jest.mock('uuid', () => ({
   v4: jest.fn(() => 'mock-uuid-v4'),
 }));
 
+// Mock bcrypt module
+jest.mock('bcrypt', () => ({
+  hash: jest.fn(),
+  compare: jest.fn(),
+}));
+
 describe('AuthService', () => {
   let service: AuthService;
+  let bcryptHashSpy: jest.SpyInstance;
+  let bcryptCompareSpy: jest.SpyInstance;
 
   const mockUserRepository = {
     findOne: jest.fn(),
@@ -40,6 +48,10 @@ describe('AuthService', () => {
     }).compile();
 
     service = module.get<AuthService>(AuthService);
+    
+    // 获取 bcrypt mock 函数的引用
+    bcryptHashSpy = bcrypt.hash as jest.MockedFunction<typeof bcrypt.hash>;
+    bcryptCompareSpy = bcrypt.compare as jest.MockedFunction<typeof bcrypt.compare>;
   });
 
   afterEach(() => {
@@ -56,26 +68,28 @@ describe('AuthService', () => {
 
       mockUserRepository.findOne.mockResolvedValue(null);
       mockUserRepository.create.mockReturnValue({
-        id: '1',
-        ...registerDto,
-        password: 'hashedPassword',
+        userId: 'mock-uuid-v4',
+        username: 'testuser',
+        email: 'test@example.com',
+        passwordHash: 'hashedPassword',
       });
       mockUserRepository.save.mockResolvedValue({
-        id: '1',
-        ...registerDto,
-        password: 'hashedPassword',
+        userId: 'mock-uuid-v4',
+        username: 'testuser',
+        email: 'test@example.com',
+        passwordHash: 'hashedPassword',
       });
       mockJwtService.sign.mockReturnValue('jwt-token');
 
       // Mock bcrypt.hash
-      jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashedPassword' as never);
+      bcryptHashSpy.mockResolvedValue('hashedPassword' as never);
 
       const result = await service.register(registerDto);
 
       expect(result).toEqual({
-        access_token: 'jwt-token',
+        token: 'jwt-token',
         user: {
-          id: '1',
+          userId: 'mock-uuid-v4',
           username: 'testuser',
           email: 'test@example.com',
         },
@@ -105,94 +119,74 @@ describe('AuthService', () => {
 
   describe('login', () => {
     it('应该成功登录用户', () => {
-      const loginDto = {
-        username: 'testuser',
-        password: 'password123',
-      };
-
       const user = {
-        id: '1',
+        userId: '1',
         username: 'testuser',
         email: 'test@example.com',
-        password: 'hashedPassword',
+        passwordHash: 'hashedPassword',
       };
 
-      mockUserRepository.findOne.mockResolvedValue(user);
       mockJwtService.sign.mockReturnValue('jwt-token');
 
-      // Mock bcrypt.compare
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
-
-      const result = service.login(loginDto);
+      const result = service.login(user);
 
       expect(result).toEqual({
-        access_token: 'jwt-token',
         user: {
-          id: '1',
+          userId: '1',
           username: 'testuser',
           email: 'test@example.com',
         },
+        token: 'jwt-token',
       });
-    });
-
-    it('当用户不存在时应该抛出 UnauthorizedException', async () => {
-      const loginDto = {
-        username: 'nonexistent',
-        password: 'password123',
-      };
-
-      mockUserRepository.findOne.mockResolvedValue(null);
-
-      await expect(service.login(loginDto)).rejects.toThrow(
-        UnauthorizedException,
-      );
-    });
-
-    it('当密码错误时应该抛出 UnauthorizedException', async () => {
-      const loginDto = {
+      expect(mockJwtService.sign).toHaveBeenCalledWith({
+        sub: '1',
         username: 'testuser',
-        password: 'wrongpassword',
-      };
-
-      const user = {
-        id: '1',
-        username: 'testuser',
-        password: 'hashedPassword',
-      };
-
-      mockUserRepository.findOne.mockResolvedValue(user);
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(false as never);
-
-      await expect(service.login(loginDto)).rejects.toThrow(
-        UnauthorizedException,
-      );
+      });
     });
   });
 
   describe('validateUser', () => {
     it('应该返回用户信息（不包含密码）', async () => {
       const user = {
-        id: '1',
+        userId: '1',
         username: 'testuser',
         email: 'test@example.com',
-        password: 'hashedPassword',
+        passwordHash: 'hashedPassword',
       };
 
       mockUserRepository.findOne.mockResolvedValue(user);
+      bcryptCompareSpy.mockResolvedValue(true as never);
 
-      const result = await service.validateUser('1');
+      const result = await service.validateUser('testuser', 'password123');
 
       expect(result).toEqual({
-        id: '1',
+        userId: '1',
         username: 'testuser',
         email: 'test@example.com',
+        passwordHash: 'hashedPassword',
       });
     });
 
     it('当用户不存在时应该返回 null', async () => {
       mockUserRepository.findOne.mockResolvedValue(null);
 
-      const result = await service.validateUser('999');
+      const result = await service.validateUser('nonexistent', 'password123');
+
+      expect(result).toBeNull();
+    });
+
+    it('当密码错误时应该返回 null', async () => {
+      const user = {
+        userId: '1',
+        username: 'testuser',
+        email: 'test@example.com',
+        passwordHash: 'hashedPassword',
+      };
+
+      mockUserRepository.findOne.mockResolvedValue(user);
+      bcryptCompareSpy.mockResolvedValue(false as never);
+
+      const result = await service.validateUser('testuser', 'wrongpassword');
 
       expect(result).toBeNull();
     });

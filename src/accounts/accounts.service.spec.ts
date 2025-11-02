@@ -9,6 +9,11 @@ import { Account } from '../entities/account.entity';
 import { User } from '../entities/user.entity';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
 
+// Mock UUID module
+jest.mock('uuid', () => ({
+  v4: jest.fn(() => 'mock-uuid-v4'),
+}));
+
 describe('AccountsService', () => {
   let service: AccountsService;
 
@@ -31,11 +36,10 @@ describe('AccountsService', () => {
   };
 
   const mockAccount = {
-    id: 'account-1',
-    accountName: '测试账号1',
-    serverName: '测试服务器',
-    characterName: '测试角色',
-    isEnabled: true,
+    accountId: 'account-1',
+    userId: 'user-1',
+    name: '测试账号1',
+    isActive: true,
     user: mockUser,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -63,17 +67,16 @@ describe('AccountsService', () => {
     jest.clearAllMocks();
   });
 
-  describe('findAll', () => {
+  describe('findAllByUser', () => {
     it('应该返回用户的所有账号', async () => {
       const accounts = [mockAccount];
       mockAccountRepository.find.mockResolvedValue(accounts);
 
-      const result = await service.findAll('user-1');
+      const result = await service.findAllByUser('user-1');
 
       expect(result).toEqual(accounts);
       expect(mockAccountRepository.find).toHaveBeenCalledWith({
-        where: { user: { id: 'user-1' } },
-        relations: ['user'],
+        where: { userId: 'user-1' },
         order: { createdAt: 'DESC' },
       });
     });
@@ -87,7 +90,7 @@ describe('AccountsService', () => {
 
       expect(result).toEqual(mockAccount);
       expect(mockAccountRepository.findOne).toHaveBeenCalledWith({
-        where: { id: 'account-1', user: { id: 'user-1' } },
+        where: { accountId: 'account-1' },
         relations: ['user'],
       });
     });
@@ -104,45 +107,42 @@ describe('AccountsService', () => {
   describe('create', () => {
     it('应该成功创建新账号', async () => {
       const createAccountDto = {
-        accountName: '新测试账号',
-        serverName: '新测试服务器',
-        characterName: '新测试角色',
+        name: '新测试账号',
+        isActive: true,
       };
 
       mockUserRepository.findOne.mockResolvedValue(mockUser);
       mockAccountRepository.create.mockReturnValue({
-        ...createAccountDto,
-        user: mockUser,
-        isEnabled: true,
+        accountId: 'mock-uuid-v4',
+        userId: 'user-1',
+        name: createAccountDto.name,
+        isActive: createAccountDto.isActive,
       });
       mockAccountRepository.save.mockResolvedValue({
-        id: 'new-account-1',
-        ...createAccountDto,
-        user: mockUser,
-        isEnabled: true,
+        accountId: 'mock-uuid-v4',
+        userId: 'user-1',
+        name: createAccountDto.name,
+        isActive: createAccountDto.isActive,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
 
-      const result = await service.create(createAccountDto, 'user-1');
+      const result = await service.create('user-1', createAccountDto);
 
-      expect(result.accountName).toBe(createAccountDto.accountName);
-      expect(result.serverName).toBe(createAccountDto.serverName);
-      expect(result.characterName).toBe(createAccountDto.characterName);
-      expect(result.isEnabled).toBe(true);
+      expect(result.name).toBe(createAccountDto.name);
+      expect(result.isActive).toBe(true);
     });
 
     it('当用户不存在时应该抛出 NotFoundException', async () => {
       const createAccountDto = {
-        accountName: '新测试账号',
-        serverName: '新测试服务器',
-        characterName: '新测试角色',
+        name: '新测试账号',
+        isActive: true,
       };
 
       mockUserRepository.findOne.mockResolvedValue(null);
 
       await expect(
-        service.create(createAccountDto, 'nonexistent'),
+        service.create('nonexistent', createAccountDto),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -150,8 +150,8 @@ describe('AccountsService', () => {
   describe('update', () => {
     it('应该成功更新账号', async () => {
       const updateAccountDto = {
-        accountName: '更新后的账号名',
-        isEnabled: false,
+        name: '更新后的账号名',
+        isActive: false,
       };
 
       const updatedAccount = {
@@ -164,40 +164,40 @@ describe('AccountsService', () => {
 
       const result = await service.update(
         'account-1',
-        updateAccountDto,
         'user-1',
+        updateAccountDto,
       );
 
-      expect(result.accountName).toBe(updateAccountDto.accountName);
-      expect(result.isEnabled).toBe(updateAccountDto.isEnabled);
+      expect(result.name).toBe(updateAccountDto.name);
+      expect(result.isActive).toBe(updateAccountDto.isActive);
     });
 
     it('当账号不存在时应该抛出 NotFoundException', async () => {
       const updateAccountDto = {
-        accountName: '更新后的账号名',
+        name: '更新后的账号名',
       };
 
       mockAccountRepository.findOne.mockResolvedValue(null);
 
       await expect(
-        service.update('nonexistent', updateAccountDto, 'user-1'),
+        service.update('nonexistent', 'user-1', updateAccountDto),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('当用户无权限时应该抛出 ForbiddenException', async () => {
       const updateAccountDto = {
-        accountName: '更新后的账号名',
+        name: '更新后的账号名',
       };
 
       const otherUserAccount = {
         ...mockAccount,
-        user: { id: 'other-user', username: 'otheruser' },
+        userId: 'other-user',
       };
 
       mockAccountRepository.findOne.mockResolvedValue(otherUserAccount);
 
       await expect(
-        service.update('account-1', updateAccountDto, 'user-1'),
+        service.update('account-1', 'user-1', updateAccountDto),
       ).rejects.toThrow(ForbiddenException);
     });
   });
@@ -223,7 +223,7 @@ describe('AccountsService', () => {
     it('当用户无权限时应该抛出 ForbiddenException', async () => {
       const otherUserAccount = {
         ...mockAccount,
-        user: { id: 'other-user', username: 'otheruser' },
+        userId: 'other-user',
       };
 
       mockAccountRepository.findOne.mockResolvedValue(otherUserAccount);
