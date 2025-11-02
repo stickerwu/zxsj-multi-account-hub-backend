@@ -17,14 +17,16 @@ import { SchedulerModule } from './scheduler/scheduler.module';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
+        type: 'mysql',
         host: configService.get('DB_HOST'),
         port: configService.get('DB_PORT'),
         username: configService.get('DB_USERNAME'),
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_NAME'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: configService.get('NODE_ENV') !== 'production',
+        synchronize: false, // 暂时禁用自动同步，避免与现有表结构冲突
+        timezone: '+08:00', // 设置为北京时间
+        charset: 'utf8mb4', // 支持完整的 UTF-8 字符集，包括 emoji
       }),
       inject: [ConfigService],
     }),

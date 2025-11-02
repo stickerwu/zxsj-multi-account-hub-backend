@@ -15,7 +15,7 @@
 ## 📋 技术栈
 
 - **框架**: NestJS 10.x
-- **数据库**: PostgreSQL 15+
+- **数据库**: MySQL 8.0+
 - **缓存**: Redis 7+
 - **认证**: JWT
 - **文档**: Swagger/OpenAPI
@@ -28,7 +28,7 @@
 
 - Node.js 18+
 - pnpm
-- PostgreSQL 15+
+- MySQL 8.0+
 - Redis 7+ (可选)
 - Docker & Docker Compose (用于容器化部署)
 
@@ -64,7 +64,7 @@
 #### 前置条件
 
 1. **准备数据库服务**
-   - 确保 PostgreSQL 数据库服务已运行
+   - 确保 MySQL 数据库服务已运行
    - 创建数据库和用户
    - 记录数据库连接信息
 
@@ -76,7 +76,7 @@
 
    **必须配置的环境变量**：
    - `DB_HOST`: 数据库主机地址
-   - `DB_PORT`: 数据库端口 (默认 5432)
+   - `DB_PORT`: 数据库端口 (默认 3306)
    - `DB_USERNAME`: 数据库用户名
    - `DB_PASSWORD`: 数据库密码
    - `DB_NAME`: 数据库名称
@@ -231,8 +231,8 @@ src/
 | `NODE_ENV` | 运行环境 | `development` |
 | `PORT` | 服务端口 | `3000` |
 | `DB_HOST` | 数据库主机 | `localhost` |
-| `DB_PORT` | 数据库端口 | `5432` |
-| `DB_USERNAME` | 数据库用户名 | `postgres` |
+| `DB_PORT` | 数据库端口 | `3306` |
+| `DB_USERNAME` | 数据库用户名 | `mysql` |
 | `DB_PASSWORD` | 数据库密码 | - |
 | `DB_NAME` | 数据库名称 | `zxsj_multi_account_hub` |
 | `JWT_SECRET` | JWT 密钥 | - |

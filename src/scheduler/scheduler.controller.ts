@@ -1,5 +1,10 @@
 import { Controller, Get, Post, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { SchedulerService } from './scheduler.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -18,9 +23,9 @@ export class SchedulerController {
   }
 
   @Post('manual-reset')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: '手动触发周进度重置',
-    description: '手动执行周进度重置任务，通常用于测试或紧急情况'
+    description: '手动执行周进度重置任务，通常用于测试或紧急情况',
   })
   @ApiResponse({ status: 200, description: '成功执行手动重置' })
   @ApiResponse({ status: 500, description: '重置失败' })

@@ -15,7 +15,7 @@ import { LocalStrategy } from './strategies/local.strategy';
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => {
+      useFactory: (configService: ConfigService) => {
         const secret = configService.get<string>('JWT_SECRET');
         if (!secret) {
           throw new Error('JWT_SECRET is not defined in environment variables');
@@ -23,7 +23,7 @@ import { LocalStrategy } from './strategies/local.strategy';
         return {
           secret,
           signOptions: {
-            expiresIn: configService.get<string>('JWT_EXPIRES_IN', '7d') as any,
+            expiresIn: configService.get<string>('JWT_EXPIRES_IN', '7d'),
           },
         };
       },

@@ -29,17 +29,17 @@ fi
 echo "📦 安装项目依赖..."
 pnpm install
 
-# 检查 PostgreSQL 是否运行
-if command -v pg_isready &> /dev/null; then
-    if pg_isready -h localhost -p 5432 > /dev/null 2>&1; then
-        echo "✅ PostgreSQL 数据库连接正常"
+# 检查 MySQL 是否运行
+if command -v mysql &> /dev/null; then
+    if mysql -h localhost -P 3306 -u root -e "SELECT 1;" > /dev/null 2>&1; then
+        echo "✅ MySQL 数据库连接正常"
     else
-        echo "⚠️ PostgreSQL 数据库未运行，请启动数据库服务"
-        echo "💡 可以使用 Docker 启动: docker-compose up -d postgres"
+        echo "⚠️ MySQL 数据库未运行，请启动数据库服务"
+        echo "💡 可以使用 Docker 启动: docker-compose up -d mysql"
     fi
 else
-    echo "⚠️ 未检测到 PostgreSQL 客户端工具"
-    echo "💡 可以使用 Docker 启动数据库: docker-compose up -d postgres"
+    echo "⚠️ 未检测到 MySQL 客户端工具"
+    echo "💡 可以使用 Docker 启动数据库: docker-compose up -d mysql"
 fi
 
 # 构建项目
@@ -59,7 +59,7 @@ echo "🧪 运行测试:"
 echo "   pnpm run test"
 echo ""
 echo "🗄️ 启动数据库 (Docker):"
-echo "   docker-compose up -d postgres redis"
+echo "   docker-compose up -d mysql redis"
 echo ""
 echo "📚 查看 API 文档:"
 echo "   启动服务后访问 http://localhost:3000/api-docs"

@@ -1,6 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { AccountsService } from './accounts.service';
 import { Account } from '../entities/account.entity';
 import { User } from '../entities/user.entity';
@@ -8,8 +11,6 @@ import { NotFoundException, ForbiddenException } from '@nestjs/common';
 
 describe('AccountsService', () => {
   let service: AccountsService;
-  let accountRepository: Repository<Account>;
-  let userRepository: Repository<User>;
 
   const mockAccountRepository = {
     find: jest.fn(),
@@ -56,8 +57,6 @@ describe('AccountsService', () => {
     }).compile();
 
     service = module.get<AccountsService>(AccountsService);
-    accountRepository = module.get<Repository<Account>>(getRepositoryToken(Account));
-    userRepository = module.get<Repository<User>>(getRepositoryToken(User));
   });
 
   afterEach(() => {
@@ -142,9 +141,9 @@ describe('AccountsService', () => {
 
       mockUserRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.create(createAccountDto, 'nonexistent')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.create(createAccountDto, 'nonexistent'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -163,7 +162,11 @@ describe('AccountsService', () => {
       mockAccountRepository.findOne.mockResolvedValue(mockAccount);
       mockAccountRepository.save.mockResolvedValue(updatedAccount);
 
-      const result = await service.update('account-1', updateAccountDto, 'user-1');
+      const result = await service.update(
+        'account-1',
+        updateAccountDto,
+        'user-1',
+      );
 
       expect(result.accountName).toBe(updateAccountDto.accountName);
       expect(result.isEnabled).toBe(updateAccountDto.isEnabled);

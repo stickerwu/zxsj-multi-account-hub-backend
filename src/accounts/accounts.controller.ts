@@ -8,13 +8,26 @@ import {
   Delete,
   UseGuards,
   Request,
-  Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+} from '@nestjs/swagger';
 import { AccountsService } from './accounts.service';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { UpdateAccountDto } from './dto/update-account.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+
+// 定义认证后的请求接口
+interface AuthenticatedRequest {
+  user: {
+    userId: string;
+    username: string;
+  };
+}
 
 @ApiTags('账号管理')
 @ApiBearerAuth()
@@ -28,8 +41,14 @@ export class AccountsController {
   @ApiResponse({ status: 201, description: '账号创建成功' })
   @ApiResponse({ status: 400, description: '请求参数错误' })
   @ApiResponse({ status: 401, description: '未授权' })
-  async create(@Request() req, @Body() createAccountDto: CreateAccountDto) {
-    const account = await this.accountsService.create(req.user.userId, createAccountDto);
+  async create(
+    @Request() req: AuthenticatedRequest,
+    @Body() createAccountDto: CreateAccountDto,
+  ) {
+    const account = await this.accountsService.create(
+      req.user.userId,
+      createAccountDto,
+    );
     return {
       code: 200,
       message: '账号创建成功',
@@ -41,7 +60,7 @@ export class AccountsController {
   @ApiOperation({ summary: '获取当前用户的所有账号' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiResponse({ status: 401, description: '未授权' })
-  async findAll(@Request() req) {
+  async findAll(@Request() req: AuthenticatedRequest) {
     const accounts = await this.accountsService.findAllByUser(req.user.userId);
     return {
       code: 200,
@@ -54,7 +73,7 @@ export class AccountsController {
   @ApiOperation({ summary: '获取账号统计信息' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiResponse({ status: 401, description: '未授权' })
-  async getStats(@Request() req) {
+  async getStats(@Request() req: AuthenticatedRequest) {
     const [allAccounts, activeCount] = await Promise.all([
       this.accountsService.findAllByUser(req.user.userId),
       this.accountsService.getActiveAccountCount(req.user.userId),
@@ -78,7 +97,7 @@ export class AccountsController {
   @ApiResponse({ status: 404, description: '账号不存在' })
   @ApiResponse({ status: 403, description: '无权访问' })
   @ApiResponse({ status: 401, description: '未授权' })
-  async findOne(@Param('id') id: string, @Request() req) {
+  async findOne(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
     const account = await this.accountsService.findOne(id, req.user.userId);
     return {
       code: 200,
@@ -94,8 +113,16 @@ export class AccountsController {
   @ApiResponse({ status: 404, description: '账号不存在' })
   @ApiResponse({ status: 403, description: '无权访问' })
   @ApiResponse({ status: 401, description: '未授权' })
-  async update(@Param('id') id: string, @Body() updateAccountDto: UpdateAccountDto, @Request() req) {
-    const account = await this.accountsService.update(id, req.user.userId, updateAccountDto);
+  async update(
+    @Param('id') id: string,
+    @Body() updateAccountDto: UpdateAccountDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const account = await this.accountsService.update(
+      id,
+      req.user.userId,
+      updateAccountDto,
+    );
     return {
       code: 200,
       message: '更新成功',
@@ -110,8 +137,14 @@ export class AccountsController {
   @ApiResponse({ status: 404, description: '账号不存在' })
   @ApiResponse({ status: 403, description: '无权访问' })
   @ApiResponse({ status: 401, description: '未授权' })
-  async toggleActive(@Param('id') id: string, @Request() req) {
-    const account = await this.accountsService.toggleActive(id, req.user.userId);
+  async toggleActive(
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const account = await this.accountsService.toggleActive(
+      id,
+      req.user.userId,
+    );
     return {
       code: 200,
       message: '状态切换成功',
@@ -126,7 +159,7 @@ export class AccountsController {
   @ApiResponse({ status: 401, description: '未授权' })
   async batchUpdateStatus(
     @Body() body: { accountIds: string[]; isActive: boolean },
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     const accounts = await this.accountsService.batchUpdateStatus(
       body.accountIds,
@@ -147,7 +180,7 @@ export class AccountsController {
   @ApiResponse({ status: 404, description: '账号不存在' })
   @ApiResponse({ status: 403, description: '无权访问' })
   @ApiResponse({ status: 401, description: '未授权' })
-  async remove(@Param('id') id: string, @Request() req) {
+  async remove(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
     await this.accountsService.remove(id, req.user.userId);
     return {
       code: 200,

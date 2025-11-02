@@ -1,6 +1,10 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { Account } from '../entities/account.entity';
 import { User } from '../entities/user.entity';
@@ -19,7 +23,10 @@ export class AccountsService {
   /**
    * 创建新账号
    */
-  async create(userId: string, createAccountDto: CreateAccountDto): Promise<Account> {
+  async create(
+    userId: string,
+    createAccountDto: CreateAccountDto,
+  ): Promise<Account> {
     // 验证用户是否存在
     const user = await this.userRepository.findOne({ where: { userId } });
     if (!user) {
@@ -70,7 +77,11 @@ export class AccountsService {
   /**
    * 更新账号信息
    */
-  async update(accountId: string, userId: string, updateAccountDto: UpdateAccountDto): Promise<Account> {
+  async update(
+    accountId: string,
+    userId: string,
+    updateAccountDto: UpdateAccountDto,
+  ): Promise<Account> {
     const account = await this.findOne(accountId, userId);
 
     // 更新账号信息
@@ -95,7 +106,7 @@ export class AccountsService {
     const account = await this.findOne(accountId, userId);
     account.isActive = !account.isActive;
     account.updatedAt = new Date();
-    
+
     return this.accountRepository.save(account);
   }
 
@@ -111,9 +122,13 @@ export class AccountsService {
   /**
    * 批量更新账号状态
    */
-  async batchUpdateStatus(accountIds: string[], userId: string, isActive: boolean): Promise<Account[]> {
+  async batchUpdateStatus(
+    accountIds: string[],
+    userId: string,
+    isActive: boolean,
+  ): Promise<Account[]> {
     const accounts = await this.accountRepository.find({
-      where: { accountId: accountIds as any, userId },
+      where: { accountId: In(accountIds), userId },
     });
 
     if (accounts.length !== accountIds.length) {
@@ -121,7 +136,7 @@ export class AccountsService {
     }
 
     // 批量更新状态
-    accounts.forEach(account => {
+    accounts.forEach((account) => {
       account.isActive = isActive;
       account.updatedAt = new Date();
     });

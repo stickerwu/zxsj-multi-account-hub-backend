@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
@@ -7,7 +11,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 describe('AppController (e2e)', () => {
   let app: INestApplication;
   let authToken: string;
-  let userId: string;
   let accountId: string;
 
   beforeAll(async () => {
@@ -64,10 +67,9 @@ describe('AppController (e2e)', () => {
           expect(res.body.user).toHaveProperty('id');
           expect(res.body.user.username).toBe(testUser.username);
           expect(res.body.user.email).toBe(testUser.email);
-          
+
           // 保存认证信息用于后续测试
           authToken = res.body.access_token;
-          userId = res.body.user.id;
         });
     });
 
@@ -123,7 +125,7 @@ describe('AppController (e2e)', () => {
           expect(res.body.serverName).toBe(testAccount.serverName);
           expect(res.body.characterName).toBe(testAccount.characterName);
           expect(res.body.isEnabled).toBe(true);
-          
+
           // 保存账号ID用于后续测试
           accountId = res.body.id;
         });
@@ -171,9 +173,7 @@ describe('AppController (e2e)', () => {
     });
 
     it('/api/accounts (GET) - 未认证应该失败', () => {
-      return request(app.getHttpServer())
-        .get('/api/accounts')
-        .expect(401);
+      return request(app.getHttpServer()).get('/api/accounts').expect(401);
     });
   });
 

@@ -76,7 +76,7 @@
 
 ### 后端技术栈
 - **框架**: NestJS 11.x (Node.js)
-- **数据库**: PostgreSQL 15+ (支持 MySQL)
+- **数据库**: MySQL 8.0+ (原支持 PostgreSQL)
 - **ORM**: TypeORM
 - **认证**: JWT + Passport
 - **定时任务**: @nestjs/schedule

@@ -2,14 +2,15 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { Request, Response } from 'express';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   // 获取配置服务
   const configService = app.get(ConfigService);
-  
+
   // 启用全局验证管道
   app.useGlobalPipes(
     new ValidationPipe({
@@ -18,23 +19,30 @@ async function bootstrap() {
       transform: true, // 自动转换类型
     }),
   );
-  
+
   // 启用 CORS
-  const corsOrigin = configService.get<string>('CORS_ORIGIN') || 'http://localhost:3001';
+  const corsOrigin =
+    configService.get<string>('CORS_ORIGIN') || 'http://localhost:3001';
   app.enableCors({
     origin: corsOrigin.split(','), // 支持多个域名
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
-  
+
   // 设置全局前缀
   app.setGlobalPrefix('api');
-  
+
   // 配置 Swagger API 文档
   const swaggerConfig = new DocumentBuilder()
-    .setTitle(configService.get<string>('SWAGGER_TITLE') || '诛仙世界多账号管理系统 API')
-    .setDescription(configService.get<string>('SWAGGER_DESCRIPTION') || '用于管理诛仙世界游戏多个账号的进度跟踪系统')
+    .setTitle(
+      configService.get<string>('SWAGGER_TITLE') ||
+        '诛仙世界多账号管理系统 API',
+    )
+    .setDescription(
+      configService.get<string>('SWAGGER_DESCRIPTION') ||
+        '用于管理诛仙世界游戏多个账号的进度跟踪系统',
+    )
     .setVersion(configService.get<string>('SWAGGER_VERSION') || '1.0.0')
     .addBearerAuth(
       {
@@ -64,9 +72,9 @@ async function bootstrap() {
     },
     customSiteTitle: '诛仙世界多账号管理系统 API 文档',
   });
-  
+
   // 添加健康检查端点
-  app.use('/health', (req, res) => {
+  app.use('/health', (req: Request, res: Response) => {
     res.status(200).json({
       status: 'ok',
       timestamp: new Date().toISOString(),
@@ -74,10 +82,10 @@ async function bootstrap() {
       environment: configService.get<string>('NODE_ENV'),
     });
   });
-  
+
   const port = configService.get<number>('PORT') || 3000;
   await app.listen(port);
-  
+
   console.log(`🚀 诛仙世界多账号管理系统后端服务已启动`);
   console.log(`📡 服务地址: http://localhost:${port}/api`);
   console.log(`📚 API 文档: http://localhost:${port}/${swaggerPath}`);
@@ -85,4 +93,7 @@ async function bootstrap() {
   console.log(`🌍 环境: ${configService.get<string>('NODE_ENV')}`);
   console.log(`🔗 CORS 允许源: ${corsOrigin}`);
 }
-bootstrap();
+bootstrap().catch((error) => {
+  console.error('应用启动失败:', error);
+  process.exit(1);
+});

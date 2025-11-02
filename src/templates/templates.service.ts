@@ -23,7 +23,9 @@ export class TemplatesService {
   /**
    * 创建副本模板
    */
-  async createDungeonTemplate(createDungeonTemplateDto: CreateDungeonTemplateDto): Promise<DungeonTemplate> {
+  async createDungeonTemplate(
+    createDungeonTemplateDto: CreateDungeonTemplateDto,
+  ): Promise<DungeonTemplate> {
     const template = this.dungeonTemplateRepository.create({
       templateId: uuidv4(),
       dungeonName: createDungeonTemplateDto.dungeonName,
@@ -83,7 +85,9 @@ export class TemplatesService {
   /**
    * 根据副本名称搜索模板
    */
-  async searchDungeonTemplates(dungeonName: string): Promise<DungeonTemplate[]> {
+  async searchDungeonTemplates(
+    dungeonName: string,
+  ): Promise<DungeonTemplate[]> {
     return this.dungeonTemplateRepository
       .createQueryBuilder('template')
       .where('template.dungeonName LIKE :name', { name: `%${dungeonName}%` })
@@ -96,7 +100,9 @@ export class TemplatesService {
   /**
    * 创建周常任务模板
    */
-  async createWeeklyTaskTemplate(createWeeklyTaskTemplateDto: CreateWeeklyTaskTemplateDto): Promise<WeeklyTaskTemplate> {
+  async createWeeklyTaskTemplate(
+    createWeeklyTaskTemplateDto: CreateWeeklyTaskTemplateDto,
+  ): Promise<WeeklyTaskTemplate> {
     const template = this.weeklyTaskTemplateRepository.create({
       templateId: uuidv4(),
       taskName: createWeeklyTaskTemplateDto.taskName,
@@ -118,7 +124,9 @@ export class TemplatesService {
   /**
    * 根据ID获取周常任务模板
    */
-  async findWeeklyTaskTemplateById(templateId: string): Promise<WeeklyTaskTemplate> {
+  async findWeeklyTaskTemplateById(
+    templateId: string,
+  ): Promise<WeeklyTaskTemplate> {
     const template = await this.weeklyTaskTemplateRepository.findOne({
       where: { templateId },
     });
@@ -156,7 +164,9 @@ export class TemplatesService {
   /**
    * 根据任务名称搜索模板
    */
-  async searchWeeklyTaskTemplates(taskName: string): Promise<WeeklyTaskTemplate[]> {
+  async searchWeeklyTaskTemplates(
+    taskName: string,
+  ): Promise<WeeklyTaskTemplate[]> {
     return this.weeklyTaskTemplateRepository
       .createQueryBuilder('template')
       .where('template.taskName LIKE :name', { name: `%${taskName}%` })

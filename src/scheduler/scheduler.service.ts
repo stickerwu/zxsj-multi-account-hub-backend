@@ -19,7 +19,7 @@ export class SchedulerService {
   })
   async handleWeeklyProgressReset() {
     this.logger.log('开始执行周进度重置任务...');
-    
+
     try {
       await this.progressService.resetAllWeeklyProgress();
       this.logger.log('周进度重置任务执行成功');
@@ -36,17 +36,17 @@ export class SchedulerService {
     name: 'cleanupOldProgress',
     timeZone: 'Asia/Shanghai',
   })
-  async handleDataCleanup() {
+  handleDataCleanup() {
     this.logger.log('开始执行数据清理任务...');
-    
+
     try {
       // 计算 4 周前的日期
       const fourWeeksAgo = new Date();
       fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
-      
+
       // 这里可以添加清理逻辑，删除超过 4 周的历史数据
       // await this.progressService.cleanupOldProgress(fourWeeksAgo);
-      
+
       this.logger.log('数据清理任务执行成功');
     } catch (error) {
       this.logger.error('数据清理任务执行失败', error);
@@ -59,13 +59,13 @@ export class SchedulerService {
   @Cron(CronExpression.EVERY_HOUR, {
     name: 'healthCheck',
   })
-  async handleHealthCheck() {
+  handleHealthCheck() {
     this.logger.debug('执行系统健康检查...');
-    
+
     try {
       // 这里可以添加系统健康检查逻辑
       // 例如：检查数据库连接、检查关键服务状态等
-      
+
       this.logger.debug('系统健康检查完成');
     } catch (error) {
       this.logger.error('系统健康检查失败', error);
@@ -75,9 +75,12 @@ export class SchedulerService {
   /**
    * 手动触发周进度重置（用于测试或紧急情况）
    */
-  async manualResetWeeklyProgress(): Promise<{ message: string; timestamp: Date }> {
+  async manualResetWeeklyProgress(): Promise<{
+    message: string;
+    timestamp: Date;
+  }> {
     this.logger.log('手动触发周进度重置...');
-    
+
     try {
       await this.progressService.resetAllWeeklyProgress();
       const result = {
@@ -108,14 +111,14 @@ export class SchedulerService {
     const now = new Date();
     const nextWednesday = new Date(now);
     const daysUntilWednesday = (3 - now.getDay() + 7) % 7;
-    
+
     if (daysUntilWednesday === 0 && now.getHours() >= 8) {
       // 如果今天是周三且已过 8 点，则计算下周三
       nextWednesday.setDate(now.getDate() + 7);
     } else {
       nextWednesday.setDate(now.getDate() + daysUntilWednesday);
     }
-    
+
     nextWednesday.setHours(8, 0, 0, 0);
 
     return {

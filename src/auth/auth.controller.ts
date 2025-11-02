@@ -1,10 +1,37 @@
-import { Controller, Post, Body, UseGuards, Request, Get } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Request,
+  Get,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+
+// 定义用户接口
+interface User {
+  id: string;
+  username: string;
+  email: string;
+  phone?: string;
+  passwordHash: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// 定义认证后的请求接口
+interface AuthenticatedRequest {
+  user: User;
+}
 
 @ApiTags('认证管理')
 @Controller('auth')
@@ -31,8 +58,8 @@ export class AuthController {
   @ApiResponse({ status: 200, description: '登录成功' })
   @ApiResponse({ status: 401, description: '登录凭证或密码错误' })
   @ApiResponse({ status: 400, description: '请求参数错误' })
-  async login(@Request() req, @Body() loginDto: LoginDto) {
-    const result = await this.authService.login(req.user);
+  login(@Request() req: AuthenticatedRequest) {
+    const result = this.authService.login(req.user);
     return {
       code: 200,
       message: '登录成功',
@@ -46,8 +73,9 @@ export class AuthController {
   @ApiOperation({ summary: '获取当前用户信息' })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiResponse({ status: 401, description: '未授权' })
-  async getProfile(@Request() req) {
-    const { passwordHash: _, ...userWithoutPassword } = req.user;
+  getProfile(@Request() req: AuthenticatedRequest) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { passwordHash, ...userWithoutPassword } = req.user;
     return {
       code: 200,
       message: '获取成功',
@@ -61,7 +89,7 @@ export class AuthController {
   @ApiOperation({ summary: '用户登出' })
   @ApiResponse({ status: 200, description: '登出成功' })
   @ApiResponse({ status: 401, description: '未授权' })
-  async logout() {
+  logout() {
     // JWT 是无状态的，客户端删除 token 即可实现登出
     // 这里可以添加黑名单逻辑或其他业务逻辑
     return {

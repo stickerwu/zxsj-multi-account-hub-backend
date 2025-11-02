@@ -1,6 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { ProgressService } from './progress.service';
 import { WeeklyProgress } from '../entities/weekly-progress.entity';
 import { Account } from '../entities/account.entity';
@@ -13,8 +16,6 @@ jest.mock('uuid', () => ({
 
 describe('ProgressService', () => {
   let service: ProgressService;
-  let progressRepository: Repository<WeeklyProgress>;
-  let accountRepository: Repository<Account>;
 
   const mockProgressRepository = {
     find: jest.fn(),
@@ -49,12 +50,12 @@ describe('ProgressService', () => {
     account: mockAccount,
     weekStart: new Date('2024-01-01'),
     dungeonProgress: {
-      'template1_0': true,
-      'template1_1': false,
+      template1_0: true,
+      template1_1: false,
     },
     weeklyTaskProgress: {
-      'task1': 5,
-      'task2': 3,
+      task1: 5,
+      task2: 3,
     },
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -76,12 +77,6 @@ describe('ProgressService', () => {
     }).compile();
 
     service = module.get<ProgressService>(ProgressService);
-    progressRepository = module.get<Repository<WeeklyProgress>>(
-      getRepositoryToken(WeeklyProgress),
-    );
-    accountRepository = module.get<Repository<Account>>(
-      getRepositoryToken(Account),
-    );
   });
 
   afterEach(() => {
@@ -169,7 +164,7 @@ describe('ProgressService', () => {
         ...mockProgress,
         dungeonProgress: {
           ...mockProgress.dungeonProgress,
-          'template1_0': true,
+          template1_0: true,
         },
       });
 
@@ -209,11 +204,14 @@ describe('ProgressService', () => {
         ...mockProgress,
         weeklyTaskProgress: {
           ...mockProgress.weeklyTaskProgress,
-          'task1': 10,
+          task1: 10,
         },
       });
 
-      const result = await service.updateWeeklyTaskProgress(updateDto, 'user-1');
+      const result = await service.updateWeeklyTaskProgress(
+        updateDto,
+        'user-1',
+      );
 
       expect(result.weeklyTaskProgress['task1']).toBe(10);
       expect(mockProgressRepository.save).toHaveBeenCalled();
@@ -243,7 +241,9 @@ describe('ProgressService', () => {
         execute: jest.fn().mockResolvedValue({ affected: 5 }),
       };
 
-      mockProgressRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
+      mockProgressRepository.createQueryBuilder.mockReturnValue(
+        mockQueryBuilder,
+      );
 
       const result = await service.resetAllWeeklyProgress();
 

@@ -6,12 +6,7 @@ import { WeeklyProgress } from '../entities/weekly-progress.entity';
 import { Account } from '../entities/account.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([
-      WeeklyProgress,
-      Account,
-    ]),
-  ],
+  imports: [TypeOrmModule.forFeature([WeeklyProgress, Account])],
   controllers: [ProgressController],
   providers: [ProgressService],
   exports: [ProgressService],

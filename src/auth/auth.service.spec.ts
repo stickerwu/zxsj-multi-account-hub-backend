@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth.service';
 import { User } from '../entities/user.entity';
@@ -14,8 +13,6 @@ jest.mock('uuid', () => ({
 
 describe('AuthService', () => {
   let service: AuthService;
-  let userRepository: Repository<User>;
-  let jwtService: JwtService;
 
   const mockUserRepository = {
     findOne: jest.fn(),
@@ -43,8 +40,6 @@ describe('AuthService', () => {
     }).compile();
 
     service = module.get<AuthService>(AuthService);
-    userRepository = module.get<Repository<User>>(getRepositoryToken(User));
-    jwtService = module.get<JwtService>(JwtService);
   });
 
   afterEach(() => {
@@ -86,10 +81,7 @@ describe('AuthService', () => {
         },
       });
       expect(mockUserRepository.findOne).toHaveBeenCalledWith({
-        where: [
-          { username: 'testuser' },
-          { email: 'test@example.com' },
-        ],
+        where: [{ username: 'testuser' }, { email: 'test@example.com' }],
       });
     });
 
@@ -112,7 +104,7 @@ describe('AuthService', () => {
   });
 
   describe('login', () => {
-    it('应该成功登录用户', async () => {
+    it('应该成功登录用户', () => {
       const loginDto = {
         username: 'testuser',
         password: 'password123',
@@ -131,7 +123,7 @@ describe('AuthService', () => {
       // Mock bcrypt.compare
       jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
 
-      const result = await service.login(loginDto);
+      const result = service.login(loginDto);
 
       expect(result).toEqual({
         access_token: 'jwt-token',

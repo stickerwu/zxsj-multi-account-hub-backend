@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
@@ -6,7 +6,6 @@ import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import { User } from '../entities/user.entity';
 import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
 import { JwtPayload } from './strategies/jwt.strategy';
 
 @Injectable()
@@ -20,7 +19,9 @@ export class AuthService {
   /**
    * 用户注册
    */
-  async register(registerDto: RegisterDto): Promise<{ user: Partial<User>; token: string }> {
+  async register(
+    registerDto: RegisterDto,
+  ): Promise<{ user: Partial<User>; token: string }> {
     const { username, email, phone, password } = registerDto;
 
     // 检查用户名是否已存在
@@ -67,7 +68,8 @@ export class AuthService {
     const token = this.jwtService.sign(payload);
 
     // 返回用户信息（不包含密码）
-    const { passwordHash: _, ...userWithoutPassword } = savedUser;
+
+    const { passwordHash, ...userWithoutPassword } = savedUser;
     return {
       user: userWithoutPassword,
       token,
@@ -77,7 +79,10 @@ export class AuthService {
   /**
    * 用户登录验证
    */
-  async validateUser(credential: string, password: string): Promise<User | null> {
+  async validateUser(
+    credential: string,
+    password: string,
+  ): Promise<User | null> {
     // 根据用户名、邮箱或手机号查找用户
     const user = await this.userRepository.findOne({
       where: [
@@ -103,7 +108,7 @@ export class AuthService {
   /**
    * 用户登录
    */
-  async login(user: User): Promise<{ user: Partial<User>; token: string }> {
+  login(user: User): { user: Partial<User>; token: string } {
     const payload: JwtPayload = {
       sub: user.userId,
       username: user.username,
@@ -111,7 +116,8 @@ export class AuthService {
     const token = this.jwtService.sign(payload);
 
     // 返回用户信息（不包含密码）
-    const { passwordHash: _, ...userWithoutPassword } = user;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { passwordHash, ...userWithoutPassword } = user;
     return {
       user: userWithoutPassword,
       token,

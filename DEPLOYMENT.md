@@ -7,7 +7,7 @@
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   前端应用      │    │   后端应用      │    │   数据库服务    │
-│  (Frontend)     │───▶│  (Backend)      │───▶│  (PostgreSQL)   │
+│  (Frontend)     │───▶│  (Backend)      │───▶│  (MySQL)        │
 │                 │    │                 │    │                 │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
                               │
@@ -26,23 +26,24 @@
 #### 1.1 准备数据库
 
 **选项 A: 使用云数据库服务**
-- AWS RDS PostgreSQL
-- Google Cloud SQL
-- Azure Database for PostgreSQL
-- 阿里云 RDS PostgreSQL
+- AWS RDS MySQL
+- Google Cloud SQL MySQL
+- Azure Database for MySQL
+- 阿里云 RDS MySQL
 
 **选项 B: 自建数据库服务器**
 ```bash
-# 安装 PostgreSQL
+# 安装 MySQL
 sudo apt update
-sudo apt install postgresql postgresql-contrib
+sudo apt install mysql-server
 
 # 创建数据库和用户
-sudo -u postgres psql
+sudo mysql
 CREATE DATABASE zxsj_multi_account_hub;
-CREATE USER zxsj_user WITH PASSWORD 'your_secure_password';
-GRANT ALL PRIVILEGES ON DATABASE zxsj_multi_account_hub TO zxsj_user;
-\q
+CREATE USER 'zxsj_user'@'%' IDENTIFIED BY 'your_secure_password';
+GRANT ALL PRIVILEGES ON zxsj_multi_account_hub.* TO 'zxsj_user'@'%';
+FLUSH PRIVILEGES;
+EXIT;
 ```
 
 #### 1.2 配置环境变量
@@ -63,7 +64,7 @@ PORT=3000
 
 # 数据库配置
 DB_HOST=your-database-host.com
-DB_PORT=5432
+DB_PORT=3306
 DB_USERNAME=zxsj_user
 DB_PASSWORD=your_secure_password
 DB_NAME=zxsj_multi_account_hub
@@ -101,14 +102,15 @@ WITH_NGINX=true docker-compose --profile with-nginx up -d
 #### 2.1 使用本地数据库
 
 ```bash
-# 启动本地 PostgreSQL (Docker)
+# 启动本地 MySQL (Docker)
 docker run -d \
-  --name postgres-dev \
-  -e POSTGRES_DB=zxsj_multi_account_hub \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_PASSWORD=postgres123 \
-  -p 5432:5432 \
-  postgres:15-alpine
+  --name mysql-dev \
+  -e MYSQL_DATABASE=zxsj_multi_account_hub \
+  -e MYSQL_USER=mysql \
+  -e MYSQL_PASSWORD=mysql123 \
+  -e MYSQL_ROOT_PASSWORD=root123 \
+  -p 3306:3306 \
+  mysql:8.0
 ```
 
 #### 2.2 配置开发环境变量
@@ -117,9 +119,9 @@ docker run -d \
 NODE_ENV=development
 PORT=3000
 DB_HOST=localhost
-DB_PORT=5432
-DB_USERNAME=postgres
-DB_PASSWORD=postgres123
+DB_PORT=3306
+DB_USERNAME=mysql
+DB_PASSWORD=mysql123
 DB_NAME=zxsj_multi_account_hub
 JWT_SECRET=dev_jwt_secret_key_for_development_only
 CORS_ORIGIN=http://localhost:3001

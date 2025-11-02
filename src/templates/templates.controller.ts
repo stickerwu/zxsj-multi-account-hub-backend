@@ -9,7 +9,14 @@ import {
   UseGuards,
   Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { TemplatesService } from './templates.service';
 import { CreateDungeonTemplateDto } from './dto/create-dungeon-template.dto';
 import { UpdateDungeonTemplateDto } from './dto/update-dungeon-template.dto';
@@ -31,8 +38,12 @@ export class TemplatesController {
   @ApiResponse({ status: 201, description: '副本模板创建成功' })
   @ApiResponse({ status: 400, description: '请求参数错误' })
   @ApiResponse({ status: 401, description: '未授权' })
-  async createDungeonTemplate(@Body() createDungeonTemplateDto: CreateDungeonTemplateDto) {
-    const template = await this.templatesService.createDungeonTemplate(createDungeonTemplateDto);
+  async createDungeonTemplate(
+    @Body() createDungeonTemplateDto: CreateDungeonTemplateDto,
+  ) {
+    const template = await this.templatesService.createDungeonTemplate(
+      createDungeonTemplateDto,
+    );
     return {
       code: 200,
       message: '副本模板创建成功',
@@ -46,12 +57,9 @@ export class TemplatesController {
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiResponse({ status: 401, description: '未授权' })
   async findAllDungeonTemplates(@Query('search') search?: string) {
-    let templates;
-    if (search) {
-      templates = await this.templatesService.searchDungeonTemplates(search);
-    } else {
-      templates = await this.templatesService.findAllDungeonTemplates();
-    }
+    const templates = search
+      ? await this.templatesService.searchDungeonTemplates(search)
+      : await this.templatesService.findAllDungeonTemplates();
 
     return {
       code: 200,
@@ -85,7 +93,10 @@ export class TemplatesController {
     @Param('id') id: string,
     @Body() updateDungeonTemplateDto: UpdateDungeonTemplateDto,
   ) {
-    const template = await this.templatesService.updateDungeonTemplate(id, updateDungeonTemplateDto);
+    const template = await this.templatesService.updateDungeonTemplate(
+      id,
+      updateDungeonTemplateDto,
+    );
     return {
       code: 200,
       message: '更新成功',
@@ -114,8 +125,12 @@ export class TemplatesController {
   @ApiResponse({ status: 201, description: '周常任务模板创建成功' })
   @ApiResponse({ status: 400, description: '请求参数错误' })
   @ApiResponse({ status: 401, description: '未授权' })
-  async createWeeklyTaskTemplate(@Body() createWeeklyTaskTemplateDto: CreateWeeklyTaskTemplateDto) {
-    const template = await this.templatesService.createWeeklyTaskTemplate(createWeeklyTaskTemplateDto);
+  async createWeeklyTaskTemplate(
+    @Body() createWeeklyTaskTemplateDto: CreateWeeklyTaskTemplateDto,
+  ) {
+    const template = await this.templatesService.createWeeklyTaskTemplate(
+      createWeeklyTaskTemplateDto,
+    );
     return {
       code: 200,
       message: '周常任务模板创建成功',
@@ -129,12 +144,9 @@ export class TemplatesController {
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiResponse({ status: 401, description: '未授权' })
   async findAllWeeklyTaskTemplates(@Query('search') search?: string) {
-    let templates;
-    if (search) {
-      templates = await this.templatesService.searchWeeklyTaskTemplates(search);
-    } else {
-      templates = await this.templatesService.findAllWeeklyTaskTemplates();
-    }
+    const templates = search
+      ? await this.templatesService.searchWeeklyTaskTemplates(search)
+      : await this.templatesService.findAllWeeklyTaskTemplates();
 
     return {
       code: 200,
@@ -168,7 +180,10 @@ export class TemplatesController {
     @Param('id') id: string,
     @Body() updateWeeklyTaskTemplateDto: UpdateWeeklyTaskTemplateDto,
   ) {
-    const template = await this.templatesService.updateWeeklyTaskTemplate(id, updateWeeklyTaskTemplateDto);
+    const template = await this.templatesService.updateWeeklyTaskTemplate(
+      id,
+      updateWeeklyTaskTemplateDto,
+    );
     return {
       code: 200,
       message: '更新成功',

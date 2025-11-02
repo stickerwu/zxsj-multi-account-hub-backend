@@ -1,4 +1,10 @@
-import { IsString, IsArray, ArrayNotEmpty, MinLength, MaxLength } from 'class-validator';
+import {
+  IsString,
+  IsArray,
+  ArrayNotEmpty,
+  MinLength,
+  MaxLength,
+} from 'class-validator';
 
 export class CreateDungeonTemplateDto {
   @IsString()

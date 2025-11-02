@@ -8,11 +8,24 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { ProgressService } from './progress.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UpdateDungeonProgressDto } from './dto/update-dungeon-progress.dto';
 import { UpdateWeeklyTaskProgressDto } from './dto/update-weekly-task-progress.dto';
+
+// 定义认证后的请求接口
+interface AuthenticatedRequest {
+  user: {
+    userId: string;
+    username: string;
+  };
+}
 
 @ApiTags('进度跟踪')
 @ApiBearerAuth()
@@ -24,7 +37,7 @@ export class ProgressController {
   @Get('current-week')
   @ApiOperation({ summary: '获取当前周所有账号进度' })
   @ApiResponse({ status: 200, description: '成功获取当前周进度' })
-  async getCurrentWeekProgress(@Request() req) {
+  async getCurrentWeekProgress(@Request() req: AuthenticatedRequest) {
     return this.progressService.getCurrentWeekProgress(req.user.userId);
   }
 
@@ -35,7 +48,7 @@ export class ProgressController {
   @ApiResponse({ status: 403, description: '无权访问此账号' })
   async getAccountProgress(
     @Param('accountId') accountId: string,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.progressService.getAccountProgress(accountId, req.user.userId);
   }
@@ -47,7 +60,7 @@ export class ProgressController {
   @ApiResponse({ status: 403, description: '无权访问此账号' })
   async updateDungeonProgress(
     @Body() updateDungeonProgressDto: UpdateDungeonProgressDto,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.progressService.updateDungeonProgress(
       updateDungeonProgressDto,
@@ -62,7 +75,7 @@ export class ProgressController {
   @ApiResponse({ status: 403, description: '无权访问此账号' })
   async updateWeeklyTaskProgress(
     @Body() updateWeeklyTaskProgressDto: UpdateWeeklyTaskProgressDto,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.progressService.updateWeeklyTaskProgress(
       updateWeeklyTaskProgressDto,
@@ -73,7 +86,7 @@ export class ProgressController {
   @Get('stats')
   @ApiOperation({ summary: '获取进度统计信息' })
   @ApiResponse({ status: 200, description: '成功获取统计信息' })
-  async getProgressStats(@Request() req) {
+  async getProgressStats(@Request() req: AuthenticatedRequest) {
     return this.progressService.getProgressStats(req.user.userId);
   }
 
@@ -82,15 +95,15 @@ export class ProgressController {
   @ApiResponse({ status: 200, description: '成功获取历史进度' })
   async getHistoricalProgress(
     @Query('weeks') weeks: number = 4,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.progressService.getHistoricalProgress(req.user.userId, weeks);
   }
 
   @Post('reset-weekly')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: '重置周进度（管理员功能）',
-    description: '此接口主要用于定时任务，手动调用需要管理员权限'
+    description: '此接口主要用于定时任务，手动调用需要管理员权限',
   })
   @ApiResponse({ status: 200, description: '成功重置周进度' })
   async resetWeeklyProgress() {
