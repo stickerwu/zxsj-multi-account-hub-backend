@@ -16,17 +16,7 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-
-// 定义用户接口
-interface User {
-  id: string;
-  username: string;
-  email: string;
-  phone?: string;
-  passwordHash: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { User } from '../entities/user.entity';
 
 // 定义认证后的请求接口
 interface AuthenticatedRequest {

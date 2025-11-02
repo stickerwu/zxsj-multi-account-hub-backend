@@ -8,6 +8,12 @@ import { AccountsModule } from './accounts/accounts.module';
 import { TemplatesModule } from './templates/templates.module';
 import { ProgressModule } from './progress/progress.module';
 import { SchedulerModule } from './scheduler/scheduler.module';
+// 导入所有实体
+import { User } from './entities/user.entity';
+import { Account } from './entities/account.entity';
+import { DungeonTemplate } from './entities/dungeon-template.entity';
+import { WeeklyTaskTemplate } from './entities/weekly-task-template.entity';
+import { WeeklyProgress } from './entities/weekly-progress.entity';
 
 @Module({
   imports: [
@@ -18,15 +24,22 @@ import { SchedulerModule } from './scheduler/scheduler.module';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
         type: 'mysql',
-        host: configService.get('DB_HOST'),
-        port: configService.get('DB_PORT'),
-        username: configService.get('DB_USERNAME'),
-        password: configService.get('DB_PASSWORD'),
-        database: configService.get('DB_NAME'),
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
+        host: configService.get<string>('DB_HOST') || 'localhost',
+        port: parseInt(configService.get<string>('DB_PORT') || '3306', 10),
+        username: configService.get<string>('DB_USERNAME') || 'root',
+        password: configService.get<string>('DB_PASSWORD') || '',
+        database: configService.get<string>('DB_NAME') || 'zxsj_hub',
+        entities: [
+          User,
+          Account,
+          DungeonTemplate,
+          WeeklyTaskTemplate,
+          WeeklyProgress,
+        ],
         synchronize: false, // 暂时禁用自动同步，避免与现有表结构冲突
         timezone: '+08:00', // 设置为北京时间
         charset: 'utf8mb4', // 支持完整的 UTF-8 字符集，包括 emoji
+        logging: process.env.NODE_ENV === 'development', // 开发环境启用日志
       }),
       inject: [ConfigService],
     }),

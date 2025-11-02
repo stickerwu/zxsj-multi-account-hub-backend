@@ -20,10 +20,12 @@ import { LocalStrategy } from './strategies/local.strategy';
         if (!secret) {
           throw new Error('JWT_SECRET is not defined in environment variables');
         }
+        const expiresIn = configService.get<string>('JWT_EXPIRES_IN', '7d');
         return {
           secret,
           signOptions: {
-            expiresIn: configService.get<string>('JWT_EXPIRES_IN', '7d'),
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            expiresIn: expiresIn as any, // 类型断言：JWT 库的 StringValue 类型过于复杂，使用 any 绕过
           },
         };
       },

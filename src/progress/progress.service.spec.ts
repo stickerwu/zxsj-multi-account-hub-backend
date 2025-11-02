@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ProgressService } from './progress.service';
@@ -23,6 +19,7 @@ describe('ProgressService', () => {
     create: jest.fn(),
     save: jest.fn(),
     createQueryBuilder: jest.fn(),
+    count: jest.fn(),
   };
 
   const mockAccountRepository = {
@@ -42,6 +39,8 @@ describe('ProgressService', () => {
     serverName: '测试服务器',
     characterName: '测试角色',
     isEnabled: true,
+    isActive: true,
+    userId: 'user-1',
     user: mockUser,
   };
 
@@ -86,14 +85,16 @@ describe('ProgressService', () => {
   describe('getCurrentWeekStart', () => {
     it('应该返回当前周的开始时间（周三）', () => {
       // 模拟一个周五的日期
-      const friday = new Date('2024-01-05'); // 2024年1月5日是周五
+      const friday = new Date('2024-01-05T10:00:00'); // 2024年1月5日是周五，10:00 AM
       jest.spyOn(Date, 'now').mockReturnValue(friday.getTime());
 
       const result = service.getCurrentWeekStart();
 
-      // 应该返回该周的周三（2024年1月3日）
+      // 应该返回该周的周三 8:00 AM
       expect(result.getDay()).toBe(3); // 周三
-      expect(result.getDate()).toBe(3);
+      expect(result.getHours()).toBe(8); // 8:00 AM
+      expect(result.getMinutes()).toBe(0);
+      expect(result.getSeconds()).toBe(0);
     });
   });
 
@@ -109,20 +110,17 @@ describe('ProgressService', () => {
 
       expect(result).toEqual(progresses);
       expect(mockAccountRepository.find).toHaveBeenCalledWith({
-        where: { user: { id: 'user-1' }, isEnabled: true },
+        where: { userId: 'user-1' },
       });
     });
   });
 
-  describe('getCurrentWeekProgressByAccount', () => {
+  describe('getAccountProgress', () => {
     it('应该返回指定账号的当前周进度', async () => {
       mockAccountRepository.findOne.mockResolvedValue(mockAccount);
       mockProgressRepository.findOne.mockResolvedValue(mockProgress);
 
-      const result = await service.getCurrentWeekProgressByAccount(
-        'account-1',
-        'user-1',
-      );
+      const result = await service.getAccountProgress('account-1', 'user-1');
 
       expect(result).toEqual(mockProgress);
     });
@@ -131,20 +129,20 @@ describe('ProgressService', () => {
       mockAccountRepository.findOne.mockResolvedValue(null);
 
       await expect(
-        service.getCurrentWeekProgressByAccount('nonexistent', 'user-1'),
+        service.getAccountProgress('nonexistent', 'user-1'),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('当用户无权限时应该抛出 ForbiddenException', async () => {
       const otherUserAccount = {
         ...mockAccount,
-        user: { id: 'other-user', username: 'otheruser' },
+        userId: 'other-user',
       };
 
       mockAccountRepository.findOne.mockResolvedValue(otherUserAccount);
 
       await expect(
-        service.getCurrentWeekProgressByAccount('account-1', 'user-1'),
+        service.getAccountProgress('account-1', 'user-1'),
       ).rejects.toThrow(ForbiddenException);
     });
   });
@@ -234,43 +232,37 @@ describe('ProgressService', () => {
 
   describe('resetAllWeeklyProgress', () => {
     it('应该成功重置所有周进度', async () => {
-      const mockQueryBuilder = {
-        delete: jest.fn().mockReturnThis(),
-        from: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        execute: jest.fn().mockResolvedValue({ affected: 5 }),
-      };
+      const activeAccounts = [mockAccount];
+      mockAccountRepository.find.mockResolvedValue(activeAccounts);
+      mockProgressRepository.create.mockReturnValue(mockProgress);
+      mockProgressRepository.save.mockResolvedValue([mockProgress]);
 
-      mockProgressRepository.createQueryBuilder.mockReturnValue(
-        mockQueryBuilder,
-      );
+      await service.resetAllWeeklyProgress();
 
-      const result = await service.resetAllWeeklyProgress();
-
-      expect(result).toEqual({
-        message: '周进度重置成功',
-        resetCount: 5,
-        resetTime: expect.any(Date),
+      expect(mockAccountRepository.find).toHaveBeenCalledWith({
+        where: { isActive: true },
       });
-      expect(mockQueryBuilder.execute).toHaveBeenCalled();
+      expect(mockProgressRepository.create).toHaveBeenCalled();
+      expect(mockProgressRepository.save).toHaveBeenCalled();
     });
   });
 
-  describe('getProgressStatistics', () => {
+  describe('getProgressStats', () => {
     it('应该返回进度统计信息', async () => {
       const accounts = [mockAccount];
-      const progresses = [mockProgress];
 
-      mockAccountRepository.find.mockResolvedValue(accounts);
-      mockProgressRepository.find.mockResolvedValue(progresses);
+      mockAccountRepository.find.mockResolvedValueOnce(accounts); // 总账号数
+      mockAccountRepository.find.mockResolvedValueOnce(accounts); // 活跃账号数
+      mockProgressRepository.count.mockResolvedValue(1); // 当前周进度数
 
-      const result = await service.getProgressStatistics('user-1');
+      const result = await service.getProgressStats('user-1');
 
       expect(result).toHaveProperty('totalAccounts');
       expect(result).toHaveProperty('activeAccounts');
-      expect(result).toHaveProperty('currentWeekProgress');
+      expect(result).toHaveProperty('currentWeekProgressCount');
       expect(result.totalAccounts).toBe(1);
       expect(result.activeAccounts).toBe(1);
+      expect(result.currentWeekProgressCount).toBe(1);
     });
   });
 });

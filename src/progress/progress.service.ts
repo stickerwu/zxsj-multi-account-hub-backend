@@ -26,10 +26,19 @@ export class ProgressService {
   private getCurrentWeekStart(): Date {
     const now = new Date();
     const currentDay = now.getDay(); // 0=周日, 1=周一, ..., 6=周六
-    const daysToWednesday = (3 - currentDay + 7) % 7; // 计算到周三的天数
+
+    // 计算到本周周三的天数差
+    let daysFromWednesday;
+    if (currentDay >= 3) {
+      // 如果是周三或之后，计算从周三开始的天数
+      daysFromWednesday = currentDay - 3;
+    } else {
+      // 如果是周三之前（周日、周一、周二），使用上周三
+      daysFromWednesday = currentDay + 7 - 3; // 到上周三的天数
+    }
 
     const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - daysToWednesday);
+    weekStart.setDate(now.getDate() - daysFromWednesday);
     weekStart.setHours(8, 0, 0, 0); // 设置为 8:00 AM
 
     // 如果当前时间早于本周三 8:00 AM，则使用上周三

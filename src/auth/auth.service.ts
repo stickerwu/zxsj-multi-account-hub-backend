@@ -68,8 +68,8 @@ export class AuthService {
     const token = this.jwtService.sign(payload);
 
     // 返回用户信息（不包含密码）
-
-    const { passwordHash, ...userWithoutPassword } = savedUser;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { passwordHash: _, ...userWithoutPassword } = savedUser;
     return {
       user: userWithoutPassword,
       token,
