@@ -4,21 +4,18 @@ FROM node:22-alpine AS builder
 # 设置工作目录
 WORKDIR /app
 
-# 安装 pnpm（使用 corepack 以获得更好的版本管理）
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-# 复制 package.json 和 pnpm-lock.yaml
-COPY package.json pnpm-lock.yaml ./
+# 复制 package.json 和 package-lock.json
+COPY package.json package-lock.json* ./
 
 # 安装依赖（使用缓存挂载以提高构建速度）
-RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
-    pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=npm,target=/root/.npm \
+    npm ci --only=production=false
 
 # 复制源代码
 COPY . .
 
 # 构建应用
-RUN pnpm run build
+RUN npm run build
 
 # 生产阶段
 FROM node:22-alpine AS production
@@ -26,22 +23,19 @@ FROM node:22-alpine AS production
 # 设置工作目录
 WORKDIR /app
 
-# 安装必要的系统依赖和 pnpm
-RUN apk add --no-cache curl && \
-    corepack enable && \
-    corepack prepare pnpm@latest --activate
+# 安装必要的系统依赖
+RUN apk add --no-cache curl
 
 # 创建非 root 用户
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nestjs -u 1001
 
-# 复制 package.json 和 pnpm-lock.yaml
-COPY package.json pnpm-lock.yaml ./
+# 复制 package.json 和 package-lock.json
+COPY package.json package-lock.json* ./
 
 # 只安装生产依赖
-RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
-    pnpm install --prod --frozen-lockfile --ignore-scripts && \
-    pnpm store prune
+RUN --mount=type=cache,id=npm,target=/root/.npm \
+    npm ci --only=production --ignore-scripts
 
 # 从构建阶段复制构建结果和健康检查文件
 COPY --from=builder /app/dist ./dist
