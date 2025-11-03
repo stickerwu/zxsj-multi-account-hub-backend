@@ -19,6 +19,7 @@ import {
   ApiResponse,
   ApiParam,
   ApiQuery,
+  ApiBody,
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
@@ -60,6 +61,7 @@ export class SharedAccountsController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '创建共享账号' })
+  @ApiBody({ type: CreateSharedAccountDto, description: '共享账号创建信息' })
   @ApiResponse({
     status: HttpStatus.CREATED,
     description: '共享账号创建成功',
@@ -227,6 +229,7 @@ export class SharedAccountsController {
     description: '共享账号名称',
     example: 'team_account_001',
   })
+  @ApiBody({ type: UpdateSharedAccountDto, description: '共享账号更新信息' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: '更新成功',
@@ -304,6 +307,7 @@ export class SharedAccountsController {
     description: '共享账号名称',
     example: 'team_account_001',
   })
+  @ApiBody({ type: AddUserToAccountDto, description: '添加用户信息' })
   @ApiResponse({
     status: HttpStatus.CREATED,
     description: '用户添加成功',
@@ -402,6 +406,7 @@ export class SharedAccountsController {
     description: '目标用户ID',
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
+  @ApiBody({ type: UpdateUserPermissionsDto, description: '用户权限更新信息' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: '权限更新成功',

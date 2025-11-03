@@ -17,6 +17,7 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiQuery,
+  ApiBody,
 } from '@nestjs/swagger';
 import { AccountsService } from './accounts.service';
 import { CreateAccountDto } from './dto/create-account.dto';
@@ -41,6 +42,7 @@ export class AccountsController {
 
   @Post()
   @ApiOperation({ summary: '创建新账号' })
+  @ApiBody({ type: CreateAccountDto, description: '账号创建信息' })
   @ApiResponse({ status: 201, description: '账号创建成功' })
   @ApiResponse({ status: 400, description: '请求参数错误' })
   @ApiResponse({ status: 401, description: '未授权' })
@@ -249,6 +251,7 @@ export class AccountsController {
   @Patch(':id')
   @ApiOperation({ summary: '更新账号信息' })
   @ApiParam({ name: 'id', description: '账号ID' })
+  @ApiBody({ type: UpdateAccountDto, description: '账号更新信息' })
   @ApiResponse({ status: 200, description: '更新成功' })
   @ApiResponse({ status: 404, description: '账号不存在' })
   @ApiResponse({ status: 403, description: '无权访问' })

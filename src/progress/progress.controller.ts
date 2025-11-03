@@ -14,6 +14,8 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiQuery,
+  ApiBody,
+  ApiParam,
 } from '@nestjs/swagger';
 import { ProgressService } from './progress.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -89,6 +91,7 @@ export class ProgressController {
 
   @Get('account/:accountId')
   @ApiOperation({ summary: '获取指定账号的当前周进度' })
+  @ApiParam({ name: 'accountId', description: '账号ID', type: 'string' })
   @ApiResponse({ status: 200, description: '成功获取账号进度' })
   @ApiResponse({ status: 404, description: '账号不存在' })
   @ApiResponse({ status: 403, description: '无权访问此账号' })
@@ -101,6 +104,7 @@ export class ProgressController {
 
   @Post('dungeon')
   @ApiOperation({ summary: '更新副本进度' })
+  @ApiBody({ type: UpdateDungeonProgressDto, description: '副本进度更新信息' })
   @ApiResponse({ status: 200, description: '成功更新副本进度' })
   @ApiResponse({ status: 404, description: '账号不存在' })
   @ApiResponse({ status: 403, description: '无权访问此账号' })
@@ -116,6 +120,7 @@ export class ProgressController {
 
   @Post('weekly-task')
   @ApiOperation({ summary: '更新周常任务进度' })
+  @ApiBody({ type: UpdateWeeklyTaskProgressDto, description: '周常任务进度更新信息' })
   @ApiResponse({ status: 200, description: '成功更新周常任务进度' })
   @ApiResponse({ status: 404, description: '账号不存在' })
   @ApiResponse({ status: 403, description: '无权访问此账号' })
@@ -188,6 +193,7 @@ export class ProgressController {
 
   @Get('shared-account/:accountName')
   @ApiOperation({ summary: '获取指定共享账号的当前周进度' })
+  @ApiParam({ name: 'accountName', description: '共享账号名称', type: 'string' })
   @ApiResponse({ status: 200, description: '成功获取共享账号进度' })
   @ApiResponse({ status: 404, description: '共享账号不存在' })
   @ApiResponse({ status: 403, description: '无权访问此共享账号' })
@@ -203,6 +209,7 @@ export class ProgressController {
 
   @Post('shared-account/dungeon')
   @ApiOperation({ summary: '更新共享账号副本进度' })
+  @ApiBody({ type: UpdateSharedDungeonProgressDto, description: '共享账号副本进度更新信息' })
   @ApiResponse({ status: 200, description: '成功更新共享账号副本进度' })
   @ApiResponse({ status: 404, description: '共享账号不存在' })
   @ApiResponse({ status: 403, description: '无权访问此共享账号' })
@@ -218,6 +225,7 @@ export class ProgressController {
 
   @Post('shared-account/weekly-task')
   @ApiOperation({ summary: '更新共享账号周常任务进度' })
+  @ApiBody({ type: UpdateSharedWeeklyTaskProgressDto, description: '共享账号周常任务进度更新信息' })
   @ApiResponse({ status: 200, description: '成功更新共享账号周常任务进度' })
   @ApiResponse({ status: 404, description: '共享账号不存在' })
   @ApiResponse({ status: 403, description: '无权访问此共享账号' })

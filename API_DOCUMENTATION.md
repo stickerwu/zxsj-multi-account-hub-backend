@@ -1,4 +1,4 @@
-# 诛仙世界多账号管理系统 API 接口文档
+﻿# 诛仙世界多账号管理系统 API 接口文档
 
 ## 目录
 
@@ -8,10 +8,11 @@
 - [4. 错误码说明](#4-错误码说明)
 - [5. 认证管理 API](#5-认证管理-api)
 - [6. 账号管理 API](#6-账号管理-api)
-- [7. 模板管理 API](#7-模板管理-api)
-- [8. 进度跟踪 API](#8-进度跟踪-api)
-- [9. 定时任务管理 API](#9-定时任务管理-api)
-- [10. TypeScript 类型定义](#10-typescript-类型定义)
+- [7. 共享账号管理 API](#7-共享账号管理-api)
+- [8. 模板管理 API](#8-模板管理-api)
+- [9. 进度跟踪 API](#9-进度跟踪-api)
+- [10. 定时任务管理 API](#10-定时任务管理-api)
+- [11. TypeScript 类型定义](#11-typescript-类型定义)
 
 ## 1. 概述
 
@@ -28,15 +29,14 @@
 ### 2.1 JWT Token 认证
 
 大部分 API 需要在请求头中携带 JWT Token：
-
 ```http
 Authorization: Bearer <your-jwt-token>
 ```
 
 ### 2.2 权限级别
 
-- **普通用户 (user)**: 可以管理自己的账号和进度
-- **管理员 (admin)**: 拥有所有权限，可以管理所有用户和系统设置
+- **普通用户(user)**: 可以管理自己的账号和进度
+- **管理员(admin)**: 拥有所有权限，可以管理所有用户和系统设置
 
 ## 3. 通用响应格式
 
@@ -423,9 +423,220 @@ Authorization: Bearer <your-jwt-token>
 
 **认证：** 需要 JWT Token
 
-## 7. 模板管理 API
+## 7. 共享账号管理 API
 
-### 7.1 创建副本模板
+### 7.1 创建共享账号
+
+**接口地址：** `POST /api/shared-accounts`
+
+**认证：** 需要 JWT Token
+
+**请求参数：**
+
+```json
+{
+  "accountName": "string",
+  "description": "string",
+  "permissions": {
+    "canView": true,
+    "canEdit": false,
+    "canDelete": false,
+    "canManageUsers": false
+  }
+}
+```
+
+**响应示例：**
+
+```json
+{
+  "code": 201,
+  "message": "共享账号创建成功",
+  "data": {
+    "id": "uuid",
+    "accountName": "测试共享账号",
+    "description": "用于测试的共享账号",
+    "ownerId": "uuid",
+    "createdAt": "2025-11-04T00:00:00.000Z",
+    "updatedAt": "2025-11-04T00:00:00.000Z"
+  }
+}
+```
+
+### 7.2 获取共享账号列表
+
+**接口地址：** `GET /api/shared-accounts`
+
+**认证：** 需要 JWT Token
+
+**响应示例：**
+
+```json
+{
+  "code": 200,
+  "message": "获取成功",
+  "data": [
+    {
+      "id": "uuid",
+      "accountName": "测试共享账号",
+      "description": "用于测试的共享账号",
+      "ownerId": "uuid",
+      "createdAt": "2025-11-04T00:00:00.000Z",
+      "updatedAt": "2025-11-04T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+### 7.3 获取指定共享账号详情
+
+**接口地址：** `GET /api/shared-accounts/:accountName`
+
+**认证：** 需要 JWT Token
+
+**响应示例：**
+
+```json
+{
+  "code": 200,
+  "message": "获取成功",
+  "data": {
+    "id": "uuid",
+    "accountName": "测试共享账号",
+    "description": "用于测试的共享账号",
+    "ownerId": "uuid",
+    "users": [
+      {
+        "id": "uuid",
+        "username": "testuser",
+        "permissions": {
+          "canView": true,
+          "canEdit": false,
+          "canDelete": false,
+          "canManageUsers": false
+        }
+      }
+    ],
+    "createdAt": "2025-11-04T00:00:00.000Z",
+    "updatedAt": "2025-11-04T00:00:00.000Z"
+  }
+}
+```
+
+### 7.4 更新共享账号
+
+**接口地址：** `PUT /api/shared-accounts/:accountName`
+
+**认证：** 需要 JWT Token + 所有者权限
+
+**请求参数：**
+
+```json
+{
+  "description": "string",
+  "permissions": {
+    "canView": true,
+    "canEdit": false,
+    "canDelete": false,
+    "canManageUsers": false
+  }
+}
+```
+
+### 7.5 删除共享账号
+
+**接口地址：** `DELETE /api/shared-accounts/:accountName`
+
+**认证：** 需要 JWT Token + 所有者权限
+
+### 7.6 添加用户到共享账号
+
+**接口地址：** `POST /api/shared-accounts/:accountName/users`
+
+**认证：** 需要 JWT Token + 管理用户权限
+
+**请求参数：**
+
+```json
+{
+  "userId": "string",
+  "permissions": {
+    "canView": true,
+    "canEdit": false,
+    "canDelete": false,
+    "canManageUsers": false
+  }
+}
+```
+
+### 7.7 从共享账号移除用户
+
+**接口地址：** `DELETE /api/shared-accounts/:accountName/users/:userId`
+
+**认证：** 需要 JWT Token + 管理用户权限
+
+### 7.8 更新用户权限
+
+**接口地址：** `PUT /api/shared-accounts/:accountName/users/:userId/permissions`
+
+**认证：** 需要 JWT Token + 管理用户权限
+
+**请求参数：**
+
+```json
+{
+  "permissions": {
+    "canView": true,
+    "canEdit": true,
+    "canDelete": false,
+    "canManageUsers": false
+  }
+}
+```
+
+### 7.9 检查权限
+
+**接口地址：** `GET /api/shared-accounts/:accountName/permissions/:action`
+
+**认证：** 需要 JWT Token
+
+**响应示例：**
+
+```json
+{
+  "code": 200,
+  "message": "权限检查成功",
+  "data": {
+    "hasPermission": true,
+    "action": "view"
+  }
+}
+```
+
+### 7.10 获取用户权限
+
+**接口地址：** `GET /api/shared-accounts/:accountName/permissions`
+
+**认证：** 需要 JWT Token
+
+**响应示例：**
+
+```json
+{
+  "code": 200,
+  "message": "获取成功",
+  "data": {
+    "canView": true,
+    "canEdit": false,
+    "canDelete": false,
+    "canManageUsers": false
+  }
+}
+```
+
+## 8. 模板管理 API
+
+### 8.1 创建副本模板
 
 **接口地址：** `POST /templates/dungeons`
 
@@ -463,7 +674,7 @@ Authorization: Bearer <your-jwt-token>
 }
 ```
 
-### 7.2 获取副本模板列表
+### 8.2 获取副本模板列表
 
 **接口地址：** `GET /templates/dungeons`
 
@@ -493,25 +704,25 @@ Authorization: Bearer <your-jwt-token>
 }
 ```
 
-### 7.3 获取副本模板详情
+### 8.3 获取副本模板详情
 
 **接口地址：** `GET /templates/dungeons/:id`
 
 **认证：** 需要 JWT Token
 
-### 7.4 更新副本模板
+### 8.4 更新副本模板
 
 **接口地址：** `PATCH /templates/dungeons/:id`
 
 **认证：** 需要 JWT Token + 管理员权限
 
-### 7.5 删除副本模板
+### 8.5 删除副本模板
 
 **接口地址：** `DELETE /templates/dungeons/:id`
 
 **认证：** 需要 JWT Token + 管理员权限
 
-### 7.6 创建周常任务模板
+### 8.6 创建周常任务模板
 
 **接口地址：** `POST /templates/weekly-tasks`
 
@@ -533,31 +744,31 @@ Authorization: Bearer <your-jwt-token>
 | taskName | string | 是 | 任务名称，1-100个字符 |
 | targetCount | number | 是 | 目标完成次数，必须大于0 |
 
-### 7.7 获取周常任务模板列表
+### 8.7 获取周常任务模板列表
 
 **接口地址：** `GET /templates/weekly-tasks`
 
 **认证：** 需要 JWT Token
 
-### 7.8 获取周常任务模板详情
+### 8.8 获取周常任务模板详情
 
 **接口地址：** `GET /templates/weekly-tasks/:id`
 
 **认证：** 需要 JWT Token
 
-### 7.9 更新周常任务模板
+### 8.9 更新周常任务模板
 
 **接口地址：** `PATCH /templates/weekly-tasks/:id`
 
 **认证：** 需要 JWT Token + 管理员权限
 
-### 7.10 删除周常任务模板
+### 8.10 删除周常任务模板
 
 **接口地址：** `DELETE /templates/weekly-tasks/:id`
 
 **认证：** 需要 JWT Token + 管理员权限
 
-### 7.11 获取模板统计
+### 8.11 获取模板统计
 
 **接口地址：** `GET /templates/stats`
 
@@ -576,9 +787,9 @@ Authorization: Bearer <your-jwt-token>
 }
 ```
 
-## 8. 进度跟踪 API
+## 9. 进度跟踪 API
 
-### 8.1 获取当前周进度
+### 9.1 获取当前周进度
 
 **接口地址：** `GET /progress/current-week`
 
@@ -614,13 +825,13 @@ Authorization: Bearer <your-jwt-token>
 }
 ```
 
-### 8.2 获取指定账号进度
+### 9.2 获取指定账号进度
 
 **接口地址：** `GET /progress/account/:accountId`
 
 **认证：** 需要 JWT Token
 
-### 8.3 更新副本进度
+### 9.3 更新副本进度
 
 **接口地址：** `PATCH /progress/dungeon`
 
@@ -646,7 +857,7 @@ Authorization: Bearer <your-jwt-token>
 | bossName | string | 是 | BOSS名称 |
 | killCount | number | 是 | 击杀次数，0-999 |
 
-### 8.4 更新周常任务进度
+### 9.4 更新周常任务进度
 
 **接口地址：** `PATCH /progress/weekly-task`
 
@@ -670,7 +881,7 @@ Authorization: Bearer <your-jwt-token>
 | taskName | string | 是 | 任务名称 |
 | completedCount | number | 是 | 完成次数，不能小于0 |
 
-### 8.5 获取进度统计
+### 9.5 获取进度统计
 
 **接口地址：** `GET /progress/stats`
 
@@ -690,7 +901,7 @@ Authorization: Bearer <your-jwt-token>
 }
 ```
 
-### 8.6 获取历史周进度
+### 9.6 获取历史周进度
 
 **接口地址：** `GET /progress/history`
 
@@ -703,15 +914,63 @@ Authorization: Bearer <your-jwt-token>
 | accountId | string | 否 | 账号ID筛选 |
 | weeks | number | 否 | 获取最近几周的数据，默认4周 |
 
-### 8.7 重置周进度（管理员）
+### 9.7 重置周进度（管理员）
 
 **接口地址：** `POST /progress/admin/reset-weekly`
 
 **认证：** 需要 JWT Token + 管理员权限
 
-## 9. 定时任务管理 API
+### 9.8 获取进度详情
 
-### 9.1 获取调度器信息
+**接口地址：** `GET /progress/:id`
+
+**认证：** 需要 JWT Token
+
+### 9.9 批量更新进度
+
+**接口地址：** `PATCH /progress/batch-update`
+
+**认证：** 需要 JWT Token
+
+### 9.10 导出进度数据
+
+**接口地址：** `GET /progress/export`
+
+**认证：** 需要 JWT Token
+
+### 9.11 获取进度趋势
+
+**接口地址：** `GET /progress/trends`
+
+**认证：** 需要 JWT Token
+
+### 9.12 获取账号进度排行
+
+**接口地址：** `GET /progress/rankings`
+
+**认证：** 需要 JWT Token
+
+### 9.13 获取周进度汇总
+
+**接口地址：** `GET /progress/weekly-summary`
+
+**认证：** 需要 JWT Token
+
+### 9.14 更新进度备注
+
+**接口地址：** `PATCH /progress/:id/notes`
+
+**认证：** 需要 JWT Token
+
+### 9.15 获取进度变更历史
+
+**接口地址：** `GET /progress/:id/history`
+
+**认证：** 需要 JWT Token
+
+## 10. 定时任务管理 API
+
+### 10.1 获取调度器信息
 
 **接口地址：** `GET /scheduler/info`
 
@@ -732,7 +991,7 @@ Authorization: Bearer <your-jwt-token>
 }
 ```
 
-### 9.2 手动触发周进度重置（管理员）
+### 10.2 手动触发周进度重置（管理员）
 
 **接口地址：** `POST /scheduler/trigger-weekly-reset`
 
@@ -745,198 +1004,185 @@ Authorization: Bearer <your-jwt-token>
   "code": 200,
   "message": "周进度重置已触发",
   "data": {
-    "resetTime": "2024-01-01T12:00:00.000Z",
+    "resetTime": "2024-01-01T08:00:00.000Z",
     "affectedAccounts": 15
   }
 }
 ```
 
-## 10. TypeScript 类型定义
+### 10.3 获取任务执行历史
 
-### 10.1 基础类型
+**接口地址：** `GET /scheduler/history`
+
+**认证：** 需要 JWT Token + 管理员权限
+
+### 10.4 暂停调度器（管理员）
+
+**接口地址：** `POST /scheduler/pause`
+
+**认证：** 需要 JWT Token + 管理员权限
+
+### 10.5 恢复调度器（管理员）
+
+**接口地址：** `POST /scheduler/resume`
+
+**认证：** 需要 JWT Token + 管理员权限
+
+### 10.6 获取下次执行时间
+
+**接口地址：** `GET /scheduler/next-execution`
+
+**认证：** 需要 JWT Token
+
+### 10.7 更新调度配置（管理员）
+
+**接口地址：** `PATCH /scheduler/config`
+
+**认证：** 需要 JWT Token + 管理员权限
+
+### 10.8 获取调度统计
+
+**接口地址：** `GET /scheduler/stats`
+
+**认证：** 需要 JWT Token
+
+### 10.9 测试调度任务（管理员）
+
+**接口地址：** `POST /scheduler/test`
+
+**认证：** 需要 JWT Token + 管理员权限
+
+## 11. TypeScript 类型定义
+
+### 11.1 用户相关类型
 
 ```typescript
-// 用户相关类型
-export interface User {
+interface User {
   userId: string;
   username: string;
   email?: string;
   phone?: string;
-  passwordHash: string;
-  role: 'admin' | 'user';
+  role: 'user' | 'admin';
   createdAt: Date;
   updatedAt: Date;
 }
 
-export interface UserResponseDto {
-  userId: string;
+interface LoginRequest {
+  credential: string;
+  password: string;
+}
+
+interface RegisterRequest {
   username: string;
   email?: string;
   phone?: string;
-  role: 'admin' | 'user';
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// 账号相关类型
-export interface Account {
-  accountId: string;
-  userId: string;
-  name: string;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface AccountWithUserDto {
-  accountId: string;
-  name: string;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  user: {
-    userId: string;
-    username: string;
-    email?: string;
-    phone?: string;
-    role: 'admin' | 'user';
-  };
-}
-
-// 模板相关类型
-export interface DungeonTemplate {
-  templateId: string;
-  dungeonName: string;
-  bosses: string[];
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface WeeklyTaskTemplate {
-  templateId: string;
-  taskName: string;
-  targetCount: number;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// 进度相关类型
-export interface DungeonProgressData {
-  [key: string]: boolean; // key 格式：templateId_bossIndex
-}
-
-export interface WeeklyTaskProgressData {
-  [templateId: string]: number; // 已完成次数
-}
-
-export interface WeeklyProgress {
-  progressId: string;
-  accountId: string;
-  weekStart: Date;
-  dungeonProgress: DungeonProgressData;
-  weeklyTaskProgress: WeeklyTaskProgressData;
-  lastUpdated: Date;
+  password: string;
 }
 ```
 
-### 10.2 请求 DTO 类型
+### 11.2 账号相关类型
 
 ```typescript
-// 认证相关 DTO
-export interface RegisterDto {
-  username: string;
-  email?: string;
-  phone?: string;
-  password: string;
+interface Account {
+  accountId: string;
+  name: string;
+  isActive: boolean;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
+  user?: User;
 }
 
-export interface LoginDto {
-  credential: string; // 用户名、邮箱或手机号
-  password: string;
-}
-
-// 分页相关 DTO
-export interface PaginationDto {
-  page?: number;
-  limit?: number;
-  search?: string;
-}
-
-export interface UserListDto extends PaginationDto {
-  role?: 'admin' | 'user';
-}
-
-export interface AccountListDto extends PaginationDto {
-  isActive?: boolean;
-}
-
-// 账号相关 DTO
-export interface CreateAccountDto {
+interface CreateAccountRequest {
   accountName: string;
   isActive?: boolean;
 }
+```
 
-export interface UpdateAccountDto {
-  accountName?: string;
-  isActive?: boolean;
+### 11.3 共享账号相关类型
+
+```typescript
+interface SharedAccount {
+  id: string;
+  accountName: string;
+  description?: string;
+  ownerId: string;
+  users?: SharedAccountUser[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-// 模板相关 DTO
-export interface CreateDungeonTemplateDto {
+interface SharedAccountUser {
+  id: string;
+  username: string;
+  permissions: SharedAccountPermissions;
+}
+
+interface SharedAccountPermissions {
+  canView: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
+  canManageUsers: boolean;
+}
+```
+
+### 11.4 模板相关类型
+
+```typescript
+interface DungeonTemplate {
+  templateId: string;
   dungeonName: string;
   bosses: string[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export interface UpdateDungeonTemplateDto {
-  dungeonName?: string;
-  bosses?: string[];
-}
-
-export interface CreateWeeklyTaskTemplateDto {
+interface WeeklyTaskTemplate {
+  templateId: string;
   taskName: string;
   targetCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
+### 11.5 进度相关类型
+
+```typescript
+interface WeeklyProgress {
+  progressId: string;
+  accountId: string;
+  weekStart: string;
+  dungeonProgress: Record<string, boolean>;
+  weeklyTaskProgress: Record<string, number>;
+  lastUpdated: Date;
+  account?: Account;
 }
 
-export interface UpdateWeeklyTaskTemplateDto {
-  taskName?: string;
-  targetCount?: number;
-}
-
-// 进度相关 DTO
-export interface UpdateDungeonProgressDto {
+interface UpdateDungeonProgressRequest {
   accountId: string;
   dungeonName: string;
   bossName: string;
   killCount: number;
 }
 
-export interface UpdateWeeklyTaskProgressDto {
+interface UpdateWeeklyTaskProgressRequest {
   accountId: string;
   taskName: string;
   completedCount: number;
 }
 ```
 
-### 10.3 响应类型
+### 11.6 通用响应类型
 
 ```typescript
-// 通用响应类型
-export interface ApiResponse<T = any> {
+interface ApiResponse<T = any> {
   code: number;
   message: string;
   data?: T;
 }
 
-export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
-
-export interface ApiPaginatedResponse<T> extends ApiResponse {
-  data: T[];
+interface PaginatedResponse<T = any> extends ApiResponse<T[]> {
   pagination: {
     total: number;
     page: number;
@@ -945,76 +1191,15 @@ export interface ApiPaginatedResponse<T> extends ApiResponse {
   };
 }
 
-// 登录响应类型
-export interface LoginResponse {
-  access_token: string;
-  user: UserResponseDto;
-}
-
-// 统计响应类型
-export interface AccountStatsResponse {
-  totalAccounts: number;
-  activeAccounts: number;
-  inactiveAccounts: number;
-}
-
-export interface TemplateStatsResponse {
-  dungeonTemplatesCount: number;
-  weeklyTaskTemplatesCount: number;
-}
-
-export interface ProgressStatsResponse {
-  totalAccounts: number;
-  accountsWithProgress: number;
-  completionRate: number;
-}
-
-export interface SchedulerInfoResponse {
-  status: string;
-  nextWeeklyReset: string;
-  lastWeeklyReset: string;
-  uptime: string;
-}
-```
-
-### 10.4 错误类型
-
-```typescript
-export interface ApiError {
+interface ErrorResponse {
   statusCode: number;
-  message: string | string[];
+  message: string;
   error: string;
-}
-
-export interface ValidationError extends ApiError {
-  statusCode: 400;
-  message: string[];
-  error: 'Bad Request';
-}
-
-export interface UnauthorizedError extends ApiError {
-  statusCode: 401;
-  message: string;
-  error: 'Unauthorized';
-}
-
-export interface ForbiddenError extends ApiError {
-  statusCode: 403;
-  message: string;
-  error: 'Forbidden';
-}
-
-export interface NotFoundError extends ApiError {
-  statusCode: 404;
-  message: string;
-  error: 'Not Found';
 }
 ```
 
 ---
 
-**文档版本：** v1.0.0  
-**最后更新：** 2025-11-03  
+**文档版本：** v1.1.0  
+**最后更新：** 2025-11-04  
 **维护者：** 开发团队
-
-如有疑问或建议，请联系开发团队。
