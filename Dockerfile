@@ -1,5 +1,5 @@
 # 使用官方 Node.js 运行时作为基础镜像
-FROM node:18-alpine AS builder
+FROM node:22-alpine AS builder
 
 # 设置工作目录
 WORKDIR /app
@@ -21,7 +21,7 @@ COPY . .
 RUN pnpm run build
 
 # 生产阶段
-FROM node:18-alpine AS production
+FROM node:22-alpine AS production
 
 # 设置工作目录
 WORKDIR /app
@@ -40,7 +40,7 @@ COPY package.json pnpm-lock.yaml ./
 
 # 只安装生产依赖
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
-    pnpm install --prod --frozen-lockfile && \
+    pnpm install --prod --frozen-lockfile --ignore-scripts && \
     pnpm store prune
 
 # 从构建阶段复制构建结果和健康检查文件
