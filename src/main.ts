@@ -20,11 +20,9 @@ async function bootstrap() {
     }),
   );
 
-  // 启用 CORS
-  const corsOrigin =
-    configService.get<string>('CORS_ORIGIN') || 'http://localhost:3001';
+  // 启用 CORS - 允许所有来源（适用于 Electron 应用）
   app.enableCors({
-    origin: corsOrigin.split(','), // 支持多个域名
+    origin: true, // 允许所有来源
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -91,7 +89,7 @@ async function bootstrap() {
   console.log(`📚 API 文档: http://localhost:${port}/${swaggerPath}`);
   console.log(`💚 健康检查: http://localhost:${port}/health`);
   console.log(`🌍 环境: ${configService.get<string>('NODE_ENV')}`);
-  console.log(`🔗 CORS 允许源: ${corsOrigin}`);
+  console.log(`🔗 CORS 允许源: 所有来源（适用于 Electron 应用）`);
 }
 bootstrap().catch((error) => {
   console.error('应用启动失败:', error);
