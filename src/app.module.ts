@@ -36,7 +36,7 @@ import { WeeklyProgress } from './entities/weekly-progress.entity';
           WeeklyTaskTemplate,
           WeeklyProgress,
         ],
-        synchronize: configService.get<string>('NODE_ENV') === 'test', // 测试环境启用同步
+        synchronize: false,
         timezone: '+08:00', // 设置为北京时间
         charset: 'utf8mb4', // 支持完整的 UTF-8 字符集，包括 emoji
         logging: process.env.NODE_ENV === 'development', // 开发环境启用日志

@@ -148,9 +148,6 @@ pnpm run start:prod
 # 运行测试
 pnpm run test
 
-# 运行端到端测试
-pnpm run test:e2e
-
 # 代码格式化
 pnpm run format
 
@@ -252,9 +249,6 @@ src/
 ```bash
 # 单元测试
 pnpm run test
-
-# 端到端测试
-pnpm run test:e2e
 
 # 测试覆盖率
 pnpm run test:cov

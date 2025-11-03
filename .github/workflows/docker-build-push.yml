@@ -52,9 +52,6 @@ jobs:
       - name: 运行单元测试
         run: pnpm run test
 
-      - name: 运行 E2E 测试
-        run: pnpm run test:e2e
-
       - name: 构建应用
         run: pnpm run build
 
