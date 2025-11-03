@@ -3,10 +3,11 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 const request = require('supertest');
 import { AppModule } from './../src/app.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule } from '@nestjs/config';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;
@@ -15,23 +16,32 @@ describe('AppController (e2e)', () => {
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [
-        AppModule,
-      ],
+      imports: [AppModule],
     })
-      .overrideModule(TypeOrmModule)
+      .overrideModule(ConfigModule)
       .useModule(
-        TypeOrmModule.forRoot({
-          type: 'sqlite',
-          database: ':memory:',
-          entities: [__dirname + '/../src/entities/*.entity{.ts,.js}'],
-          synchronize: true,
-          dropSchema: true,
+        ConfigModule.forRoot({
+          isGlobal: true,
+          envFilePath: '.env.test',
         }),
       )
+
       .compile();
 
     app = moduleFixture.createNestApplication();
+    
+    // 应用与 main.ts 相同的配置
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
+    
+    // 设置全局前缀
+    app.setGlobalPrefix('api');
+    
     await app.init();
   });
 
@@ -250,9 +260,9 @@ describe('AppController (e2e)', () => {
         });
     });
 
-    it('/api/progress/statistics (GET) - 获取进度统计', () => {
+    it('/api/progress/stats (GET) - 获取进度统计', () => {
       return request(app.getHttpServer())
-        .get('/api/progress/statistics')
+        .get('/api/progress/stats')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200)
         .expect((res) => {
@@ -340,9 +350,9 @@ describe('AppController (e2e)', () => {
         });
     });
 
-    it('/api/scheduler/reset-weekly-progress (POST) - 手动重置周进度', () => {
+    it('/api/scheduler/manual-reset (POST) - 手动重置周进度', () => {
       return request(app.getHttpServer())
-        .post('/api/scheduler/reset-weekly-progress')
+        .post('/api/scheduler/manual-reset')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200)
         .expect((res) => {
