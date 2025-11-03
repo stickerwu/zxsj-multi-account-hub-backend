@@ -4,7 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth.service';
 import { User } from '../entities/user.entity';
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { ConflictException } from '@nestjs/common';
 
 // Mock uuid module
 jest.mock('uuid', () => ({
@@ -48,10 +48,12 @@ describe('AuthService', () => {
     }).compile();
 
     service = module.get<AuthService>(AuthService);
-    
+
     // 获取 bcrypt mock 函数的引用
     bcryptHashSpy = bcrypt.hash as jest.MockedFunction<typeof bcrypt.hash>;
-    bcryptCompareSpy = bcrypt.compare as jest.MockedFunction<typeof bcrypt.compare>;
+    bcryptCompareSpy = bcrypt.compare as jest.MockedFunction<
+      typeof bcrypt.compare
+    >;
   });
 
   afterEach(() => {
