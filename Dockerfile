@@ -58,4 +58,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node healthcheck.js
 
 # 启动应用
-CMD ["node", "dist/main"]
+CMD ["node", "dist/src/main.js"]
