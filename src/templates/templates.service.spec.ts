@@ -17,8 +17,6 @@ jest.mock('uuid', () => ({
 
 describe('TemplatesService', () => {
   let service: TemplatesService;
-  let dungeonTemplateRepository: Repository<DungeonTemplate>;
-  let weeklyTaskTemplateRepository: Repository<WeeklyTaskTemplate>;
 
   const mockDungeonTemplateRepository = {
     create: jest.fn(),
@@ -113,15 +111,35 @@ describe('TemplatesService', () => {
           { templateId: '1', dungeonName: '副本1' },
           { templateId: '2', dungeonName: '副本2' },
         ];
+        const paginationDto = { page: 1, size: 10 };
 
-        mockDungeonTemplateRepository.find.mockResolvedValue(mockTemplates);
+        const mockQueryBuilder = {
+          createQueryBuilder: jest.fn().mockReturnThis(),
+          orderBy: jest.fn().mockReturnThis(),
+          skip: jest.fn().mockReturnThis(),
+          take: jest.fn().mockReturnThis(),
+          getManyAndCount: jest.fn().mockResolvedValue([mockTemplates, 2]),
+        };
 
-        const result = await service.findAllDungeonTemplates();
+        mockDungeonTemplateRepository.createQueryBuilder.mockReturnValue(
+          mockQueryBuilder,
+        );
 
-        expect(mockDungeonTemplateRepository.find).toHaveBeenCalledWith({
-          order: { createdAt: 'DESC' },
-        });
-        expect(result).toEqual(mockTemplates);
+        const result = await service.findAllDungeonTemplates(paginationDto);
+
+        expect(
+          mockDungeonTemplateRepository.createQueryBuilder,
+        ).toHaveBeenCalledWith('template');
+        expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith(
+          'template.createdAt',
+          'DESC',
+        );
+        expect(mockQueryBuilder.skip).toHaveBeenCalledWith(0);
+        expect(mockQueryBuilder.take).toHaveBeenCalledWith(10);
+        expect(result.items).toEqual(mockTemplates);
+        expect(result.total).toBe(2);
+        expect(result.page).toBe(1);
+        expect(result.size).toBe(10);
       });
     });
 
@@ -158,9 +176,11 @@ describe('TemplatesService', () => {
           dungeonName: '更新后的副本',
         };
 
-        const mockTemplate = {
+        const mockTemplate: DungeonTemplate = {
           templateId,
           dungeonName: '原副本名',
+          bosses: ['Boss1'],
+          createdAt: new Date(),
           updatedAt: new Date(),
         };
 
@@ -171,7 +191,7 @@ describe('TemplatesService', () => {
 
         jest
           .spyOn(service, 'findDungeonTemplateById')
-          .mockResolvedValue(mockTemplate as any);
+          .mockResolvedValue(mockTemplate);
         mockDungeonTemplateRepository.save.mockResolvedValue(updatedTemplate);
 
         const result = await service.updateDungeonTemplate(
@@ -190,11 +210,17 @@ describe('TemplatesService', () => {
     describe('removeDungeonTemplate', () => {
       it('应该成功删除副本模板', async () => {
         const templateId = 'test-id';
-        const mockTemplate = { templateId, dungeonName: '测试副本' };
+        const mockTemplate: DungeonTemplate = {
+          templateId,
+          dungeonName: '测试副本',
+          bosses: ['Boss1'],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
 
         jest
           .spyOn(service, 'findDungeonTemplateById')
-          .mockResolvedValue(mockTemplate as any);
+          .mockResolvedValue(mockTemplate);
         mockDungeonTemplateRepository.remove.mockResolvedValue(mockTemplate);
 
         await service.removeDungeonTemplate(templateId);
@@ -211,7 +237,15 @@ describe('TemplatesService', () => {
     describe('searchDungeonTemplates', () => {
       it('应该根据副本名称搜索模板', async () => {
         const dungeonName = '测试';
-        const mockTemplates = [{ templateId: '1', dungeonName: '测试副本' }];
+        const mockTemplates: DungeonTemplate[] = [
+          {
+            templateId: '1',
+            dungeonName: '测试副本',
+            bosses: ['Boss1'],
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ];
 
         const mockQueryBuilder = {
           where: jest.fn().mockReturnThis(),
@@ -274,26 +308,64 @@ describe('TemplatesService', () => {
 
     describe('findAllWeeklyTaskTemplates', () => {
       it('应该返回所有周常任务模板', async () => {
-        const mockTemplates = [
-          { templateId: '1', taskName: '任务1' },
-          { templateId: '2', taskName: '任务2' },
+        const mockTemplates: WeeklyTaskTemplate[] = [
+          {
+            templateId: '1',
+            taskName: '任务1',
+            targetCount: 5,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            templateId: '2',
+            taskName: '任务2',
+            targetCount: 10,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
         ];
+        const paginationDto = { page: 1, size: 10 };
 
-        mockWeeklyTaskTemplateRepository.find.mockResolvedValue(mockTemplates);
+        const mockQueryBuilder = {
+          createQueryBuilder: jest.fn().mockReturnThis(),
+          orderBy: jest.fn().mockReturnThis(),
+          skip: jest.fn().mockReturnThis(),
+          take: jest.fn().mockReturnThis(),
+          getManyAndCount: jest.fn().mockResolvedValue([mockTemplates, 2]),
+        };
 
-        const result = await service.findAllWeeklyTaskTemplates();
+        mockWeeklyTaskTemplateRepository.createQueryBuilder.mockReturnValue(
+          mockQueryBuilder,
+        );
 
-        expect(mockWeeklyTaskTemplateRepository.find).toHaveBeenCalledWith({
-          order: { createdAt: 'DESC' },
-        });
-        expect(result).toEqual(mockTemplates);
+        const result = await service.findAllWeeklyTaskTemplates(paginationDto);
+
+        expect(
+          mockWeeklyTaskTemplateRepository.createQueryBuilder,
+        ).toHaveBeenCalledWith('template');
+        expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith(
+          'template.createdAt',
+          'DESC',
+        );
+        expect(mockQueryBuilder.skip).toHaveBeenCalledWith(0);
+        expect(mockQueryBuilder.take).toHaveBeenCalledWith(10);
+        expect(result.items).toEqual(mockTemplates);
+        expect(result.total).toBe(2);
+        expect(result.page).toBe(1);
+        expect(result.size).toBe(10);
       });
     });
 
     describe('findWeeklyTaskTemplateById', () => {
       it('应该成功返回指定ID的周常任务模板', async () => {
         const templateId = 'test-id';
-        const mockTemplate = { templateId, taskName: '测试任务' };
+        const mockTemplate: WeeklyTaskTemplate = {
+          templateId,
+          taskName: '测试任务',
+          targetCount: 5,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
 
         mockWeeklyTaskTemplateRepository.findOne.mockResolvedValue(
           mockTemplate,
@@ -325,9 +397,11 @@ describe('TemplatesService', () => {
           taskName: '更新后的任务',
         };
 
-        const mockTemplate = {
+        const mockTemplate: WeeklyTaskTemplate = {
           templateId,
           taskName: '原任务名',
+          targetCount: 5,
+          createdAt: new Date(),
           updatedAt: new Date(),
         };
 
@@ -338,7 +412,7 @@ describe('TemplatesService', () => {
 
         jest
           .spyOn(service, 'findWeeklyTaskTemplateById')
-          .mockResolvedValue(mockTemplate as any);
+          .mockResolvedValue(mockTemplate);
         mockWeeklyTaskTemplateRepository.save.mockResolvedValue(
           updatedTemplate,
         );
@@ -359,11 +433,17 @@ describe('TemplatesService', () => {
     describe('removeWeeklyTaskTemplate', () => {
       it('应该成功删除周常任务模板', async () => {
         const templateId = 'test-id';
-        const mockTemplate = { templateId, taskName: '测试任务' };
+        const mockTemplate: WeeklyTaskTemplate = {
+          templateId,
+          taskName: '测试任务',
+          targetCount: 5,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
 
         jest
           .spyOn(service, 'findWeeklyTaskTemplateById')
-          .mockResolvedValue(mockTemplate as any);
+          .mockResolvedValue(mockTemplate);
         mockWeeklyTaskTemplateRepository.remove.mockResolvedValue(mockTemplate);
 
         await service.removeWeeklyTaskTemplate(templateId);
@@ -380,7 +460,15 @@ describe('TemplatesService', () => {
     describe('searchWeeklyTaskTemplates', () => {
       it('应该根据任务名称搜索模板', async () => {
         const taskName = '测试';
-        const mockTemplates = [{ templateId: '1', taskName: '测试任务' }];
+        const mockTemplates: WeeklyTaskTemplate[] = [
+          {
+            templateId: '1',
+            taskName: '测试任务',
+            targetCount: 5,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ];
 
         const mockQueryBuilder = {
           where: jest.fn().mockReturnThis(),

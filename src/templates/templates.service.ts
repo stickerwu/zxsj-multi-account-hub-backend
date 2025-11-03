@@ -8,6 +8,7 @@ import { CreateDungeonTemplateDto } from './dto/create-dungeon-template.dto';
 import { UpdateDungeonTemplateDto } from './dto/update-dungeon-template.dto';
 import { CreateWeeklyTaskTemplateDto } from './dto/create-weekly-task-template.dto';
 import { UpdateWeeklyTaskTemplateDto } from './dto/update-weekly-task-template.dto';
+import { PaginationDto, PaginatedResponse } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class TemplatesService {
@@ -36,12 +37,32 @@ export class TemplatesService {
   }
 
   /**
-   * 获取所有副本模板
+   * 获取所有副本模板（支持分页和搜索）
    */
-  async findAllDungeonTemplates(): Promise<DungeonTemplate[]> {
-    return this.dungeonTemplateRepository.find({
-      order: { createdAt: 'DESC' },
-    });
+  async findAllDungeonTemplates(
+    paginationDto: PaginationDto,
+  ): Promise<PaginatedResponse<DungeonTemplate>> {
+    const { page = 1, size = 10, search } = paginationDto;
+    const skip = (page - 1) * size;
+
+    const queryBuilder = this.dungeonTemplateRepository
+      .createQueryBuilder('template')
+      .orderBy('template.createdAt', 'DESC');
+
+    // 如果有搜索关键词，添加搜索条件
+    if (search) {
+      queryBuilder.where('template.dungeonName LIKE :search', {
+        search: `%${search}%`,
+      });
+    }
+
+    // 获取总数和分页数据
+    const [items, total] = await queryBuilder
+      .skip(skip)
+      .take(size)
+      .getManyAndCount();
+
+    return new PaginatedResponse(items, total, page, size);
   }
 
   /**
@@ -113,12 +134,32 @@ export class TemplatesService {
   }
 
   /**
-   * 获取所有周常任务模板
+   * 获取所有周常任务模板（支持分页和搜索）
    */
-  async findAllWeeklyTaskTemplates(): Promise<WeeklyTaskTemplate[]> {
-    return this.weeklyTaskTemplateRepository.find({
-      order: { createdAt: 'DESC' },
-    });
+  async findAllWeeklyTaskTemplates(
+    paginationDto: PaginationDto,
+  ): Promise<PaginatedResponse<WeeklyTaskTemplate>> {
+    const { page = 1, size = 10, search } = paginationDto;
+    const skip = (page - 1) * size;
+
+    const queryBuilder = this.weeklyTaskTemplateRepository
+      .createQueryBuilder('template')
+      .orderBy('template.createdAt', 'DESC');
+
+    // 如果有搜索关键词，添加搜索条件
+    if (search) {
+      queryBuilder.where('template.taskName LIKE :search', {
+        search: `%${search}%`,
+      });
+    }
+
+    // 获取总数和分页数据
+    const [items, total] = await queryBuilder
+      .skip(skip)
+      .take(size)
+      .getManyAndCount();
+
+    return new PaginatedResponse(items, total, page, size);
   }
 
   /**

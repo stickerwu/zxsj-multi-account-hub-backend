@@ -24,6 +24,7 @@ import { CreateWeeklyTaskTemplateDto } from './dto/create-weekly-task-template.d
 import { UpdateWeeklyTaskTemplateDto } from './dto/update-weekly-task-template.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../auth/guards/admin.guard';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @ApiTags('模板管理')
 @ApiBearerAuth()
@@ -55,19 +56,62 @@ export class TemplatesController {
   }
 
   @Get('dungeons')
-  @ApiOperation({ summary: '获取所有副本模板' })
-  @ApiQuery({ name: 'search', required: false, description: '搜索副本名称' })
-  @ApiResponse({ status: 200, description: '获取成功' })
+  @ApiOperation({ summary: '获取所有副本模板（支持分页）' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: '页码，从1开始',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'size',
+    required: false,
+    type: Number,
+    description: '每页数量，最大100',
+    example: 20,
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: '搜索副本名称',
+    example: '团队副本',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '获取成功',
+    schema: {
+      type: 'object',
+      properties: {
+        code: { type: 'number', example: 200 },
+        message: { type: 'string', example: '获取成功' },
+        data: {
+          type: 'object',
+          properties: {
+            total: { type: 'number', description: '总记录数' },
+            items: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/DungeonTemplate' },
+              description: '当前页数据列表',
+            },
+            page: { type: 'number', description: '当前页码' },
+            size: { type: 'number', description: '每页数量' },
+            totalPages: { type: 'number', description: '总页数' },
+          },
+        },
+      },
+    },
+  })
   @ApiResponse({ status: 401, description: '未授权' })
-  async findAllDungeonTemplates(@Query('search') search?: string) {
-    const templates = search
-      ? await this.templatesService.searchDungeonTemplates(search)
-      : await this.templatesService.findAllDungeonTemplates();
+  async findAllDungeonTemplates(@Query() paginationDto: PaginationDto) {
+    const result =
+      await this.templatesService.findAllDungeonTemplates(paginationDto);
 
     return {
       code: 200,
       message: '获取成功',
-      data: templates,
+      data: result,
     };
   }
 
@@ -148,19 +192,62 @@ export class TemplatesController {
   }
 
   @Get('weekly-tasks')
-  @ApiOperation({ summary: '获取所有周常任务模板' })
-  @ApiQuery({ name: 'search', required: false, description: '搜索任务名称' })
-  @ApiResponse({ status: 200, description: '获取成功' })
+  @ApiOperation({ summary: '获取所有周常任务模板（支持分页）' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: '页码，从1开始',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'size',
+    required: false,
+    type: Number,
+    description: '每页数量，最大100',
+    example: 20,
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: '搜索任务名称',
+    example: '日常任务',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '获取成功',
+    schema: {
+      type: 'object',
+      properties: {
+        code: { type: 'number', example: 200 },
+        message: { type: 'string', example: '获取成功' },
+        data: {
+          type: 'object',
+          properties: {
+            total: { type: 'number', description: '总记录数' },
+            items: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/WeeklyTaskTemplate' },
+              description: '当前页数据列表',
+            },
+            page: { type: 'number', description: '当前页码' },
+            size: { type: 'number', description: '每页数量' },
+            totalPages: { type: 'number', description: '总页数' },
+          },
+        },
+      },
+    },
+  })
   @ApiResponse({ status: 401, description: '未授权' })
-  async findAllWeeklyTaskTemplates(@Query('search') search?: string) {
-    const templates = search
-      ? await this.templatesService.searchWeeklyTaskTemplates(search)
-      : await this.templatesService.findAllWeeklyTaskTemplates();
+  async findAllWeeklyTaskTemplates(@Query() paginationDto: PaginationDto) {
+    const result =
+      await this.templatesService.findAllWeeklyTaskTemplates(paginationDto);
 
     return {
       code: 200,
       message: '获取成功',
-      data: templates,
+      data: result,
     };
   }
 

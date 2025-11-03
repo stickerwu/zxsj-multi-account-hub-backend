@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { Account } from './account.entity';
+import { UserAccountRelation } from './user-account-relation.entity';
 
 @Entity('users')
 export class User {
@@ -54,4 +55,11 @@ export class User {
     onDelete: 'CASCADE',
   })
   accounts: Account[];
+
+  // 关联关系：一个用户可以有多个共享账号关联
+  @OneToMany(() => UserAccountRelation, (relation) => relation.user, {
+    cascade: true,
+    onDelete: 'CASCADE',
+  })
+  accountRelations: UserAccountRelation[];
 }

@@ -62,8 +62,8 @@ export class AccountsService {
     userId: string,
     accountListDto: AccountListDto,
   ): Promise<PaginatedResponse<AccountWithUserDto>> {
-    const { page = 1, limit = 10, search, isActive } = accountListDto;
-    const skip = (page - 1) * limit;
+    const { page = 1, size = 10, search, isActive } = accountListDto;
+    const skip = (page - 1) * size;
 
     const queryBuilder = this.accountRepository
       .createQueryBuilder('account')
@@ -86,7 +86,7 @@ export class AccountsService {
     queryBuilder.orderBy('account.createdAt', 'DESC');
 
     // 分页
-    queryBuilder.skip(skip).take(limit);
+    queryBuilder.skip(skip).take(size);
 
     const [accounts, total] = await queryBuilder.getManyAndCount();
 
@@ -108,7 +108,7 @@ export class AccountsService {
       }),
     );
 
-    return new PaginatedResponse(accountWithUserDtos, total, page, limit);
+    return new PaginatedResponse(accountWithUserDtos, total, page, size);
   }
 
   /**
@@ -208,8 +208,8 @@ export class AccountsService {
   async findAllAccountsWithPagination(
     accountListDto: AccountListDto,
   ): Promise<PaginatedResponse<AccountWithUserDto>> {
-    const { page = 1, limit = 10, search, isActive } = accountListDto;
-    const skip = (page - 1) * limit;
+    const { page = 1, size = 10, search, isActive } = accountListDto;
+    const skip = (page - 1) * size;
 
     const queryBuilder = this.accountRepository
       .createQueryBuilder('account')
@@ -236,7 +236,7 @@ export class AccountsService {
     queryBuilder.orderBy('account.createdAt', 'DESC');
 
     // 分页
-    queryBuilder.skip(skip).take(limit);
+    queryBuilder.skip(skip).take(size);
 
     const [accounts, total] = await queryBuilder.getManyAndCount();
 
@@ -258,6 +258,6 @@ export class AccountsService {
       }),
     );
 
-    return new PaginatedResponse(accountWithUserDtos, total, page, limit);
+    return new PaginatedResponse(accountWithUserDtos, total, page, size);
   }
 }

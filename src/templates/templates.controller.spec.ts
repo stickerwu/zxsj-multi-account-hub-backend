@@ -8,7 +8,6 @@ import { UpdateWeeklyTaskTemplateDto } from './dto/update-weekly-task-template.d
 
 describe('TemplatesController', () => {
   let controller: TemplatesController;
-  let service: TemplatesService;
 
   const mockTemplatesService = {
     // 副本模板相关方法
@@ -178,22 +177,27 @@ describe('TemplatesController', () => {
 
     describe('findAllDungeonTemplates with search', () => {
       it('应该根据副本名称搜索模板', async () => {
-        const dungeonName = '测试';
-        const mockTemplates = [{ templateId: '1', dungeonName: '测试副本' }];
+        const paginationDto = { page: 1, size: 10, search: '测试' };
+        const mockResponse = {
+          items: [{ templateId: '1', dungeonName: '测试副本' }],
+          total: 1,
+          page: 1,
+          size: 10,
+        };
 
-        mockTemplatesService.searchDungeonTemplates.mockResolvedValue(
-          mockTemplates,
+        mockTemplatesService.findAllDungeonTemplates.mockResolvedValue(
+          mockResponse,
         );
 
-        const result = await controller.findAllDungeonTemplates(dungeonName);
+        const result = await controller.findAllDungeonTemplates(paginationDto);
 
         expect(
-          mockTemplatesService.searchDungeonTemplates,
-        ).toHaveBeenCalledWith(dungeonName);
+          mockTemplatesService.findAllDungeonTemplates,
+        ).toHaveBeenCalledWith(paginationDto);
         expect(result).toEqual({
           code: 200,
           message: '获取成功',
-          data: mockTemplates,
+          data: mockResponse,
         });
       });
     });
@@ -330,22 +334,28 @@ describe('TemplatesController', () => {
 
     describe('findAllWeeklyTaskTemplates with search', () => {
       it('应该根据任务名称搜索模板', async () => {
-        const taskName = '测试';
-        const mockTemplates = [{ templateId: '1', taskName: '测试任务' }];
+        const paginationDto = { page: 1, size: 10, search: '测试' };
+        const mockResponse = {
+          items: [{ templateId: '1', taskName: '测试任务' }],
+          total: 1,
+          page: 1,
+          size: 10,
+        };
 
-        mockTemplatesService.searchWeeklyTaskTemplates.mockResolvedValue(
-          mockTemplates,
+        mockTemplatesService.findAllWeeklyTaskTemplates.mockResolvedValue(
+          mockResponse,
         );
 
-        const result = await controller.findAllWeeklyTaskTemplates(taskName);
+        const result =
+          await controller.findAllWeeklyTaskTemplates(paginationDto);
 
         expect(
-          mockTemplatesService.searchWeeklyTaskTemplates,
-        ).toHaveBeenCalledWith(taskName);
+          mockTemplatesService.findAllWeeklyTaskTemplates,
+        ).toHaveBeenCalledWith(paginationDto);
         expect(result).toEqual({
           code: 200,
           message: '获取成功',
-          data: mockTemplates,
+          data: mockResponse,
         });
       });
     });

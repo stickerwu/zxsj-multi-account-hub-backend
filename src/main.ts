@@ -58,7 +58,8 @@ async function bootstrap() {
       },
       'JWT-auth', // 这个名字要与控制器中的 @ApiBearerAuth() 一致
     )
-    .addTag('认证', '用户认证相关接口')
+    .addTag('系统信息', '系统状态和基础信息相关接口')
+    .addTag('认证管理', '用户认证相关接口')
     .addTag('账号管理', '游戏账号管理相关接口')
     .addTag('模板管理', '副本和任务模板管理相关接口')
     .addTag('进度跟踪', '游戏进度跟踪相关接口')

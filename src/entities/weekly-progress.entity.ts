@@ -11,6 +11,7 @@ import {
 } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { Account } from './account.entity';
+import { SharedAccount } from './shared-account.entity';
 
 // 副本进度数据结构：{ "templateId_bossIndex": boolean }
 export interface DungeonProgressData {
@@ -24,6 +25,7 @@ export interface WeeklyTaskProgressData {
 
 @Entity('weekly_progress')
 @Unique(['accountId', 'weekStart']) // 确保每个角色每周只有一条进度记录
+@Unique(['sharedAccountName', 'weekStart']) // 确保每个共享账号每周只有一条进度记录
 export class WeeklyProgress {
   @PrimaryColumn({ type: 'varchar', length: 36 })
   progressId: string;
@@ -35,9 +37,15 @@ export class WeeklyProgress {
     }
   }
 
-  @Column({ type: 'varchar', length: 36 })
+  // 保留原有字段以支持向后兼容
+  @Column({ type: 'varchar', length: 36, nullable: true })
   @Index()
   accountId: string;
+
+  // 新增共享账号关联字段
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  @Index('idx_weekly_progress_shared_account_name')
+  sharedAccountName: string;
 
   @Column({ type: 'date' })
   @Index()
@@ -52,10 +60,23 @@ export class WeeklyProgress {
   @UpdateDateColumn()
   lastUpdated: Date;
 
-  // 关联关系：多个进度记录属于一个角色
+  // 关联关系：多个进度记录属于一个角色（向后兼容）
   @ManyToOne(() => Account, (account) => account.weeklyProgresses, {
     onDelete: 'CASCADE',
+    nullable: true,
   })
   @JoinColumn({ name: 'accountId' })
   account: Account;
+
+  // 关联关系：多个进度记录属于一个共享账号
+  @ManyToOne(
+    () => SharedAccount,
+    (sharedAccount) => sharedAccount.weeklyProgresses,
+    {
+      onDelete: 'CASCADE',
+      nullable: true,
+    },
+  )
+  @JoinColumn({ name: 'sharedAccountName' })
+  sharedAccount: SharedAccount;
 }

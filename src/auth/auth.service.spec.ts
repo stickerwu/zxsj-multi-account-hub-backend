@@ -274,10 +274,10 @@ describe('AuthService', () => {
       const result = await service.findUsersWithPagination(userListDto);
 
       expect(result).toBeInstanceOf(PaginatedResponse);
-      expect(result.data).toHaveLength(2);
+      expect(result.items).toHaveLength(2);
       expect(result.total).toBe(2);
       expect(result.page).toBe(1);
-      expect(result.limit).toBe(10);
+      expect(result.size).toBe(10);
       expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith(
         'user.createdAt',
         'DESC',

@@ -64,21 +64,57 @@ export class AccountsController {
 
   @Get()
   @ApiOperation({ summary: '分页获取当前用户的账号列表（包含用户信息）' })
-  @ApiQuery({ name: 'page', required: false, description: '页码', example: 1 })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: '页码，默认为1',
+    example: 1,
+  })
   @ApiQuery({
     name: 'limit',
     required: false,
-    description: '每页数量',
+    type: Number,
+    description: '每页数量，默认为10',
     example: 10,
   })
-  @ApiQuery({ name: 'search', required: false, description: '搜索关键词' })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: '搜索关键词（账号名称）',
+  })
   @ApiQuery({
     name: 'isActive',
     required: false,
-    description: '是否激活',
     type: Boolean,
+    description: '是否激活',
   })
-  @ApiResponse({ status: 200, description: '获取成功' })
+  @ApiResponse({
+    status: 200,
+    description: '获取成功',
+    schema: {
+      type: 'object',
+      properties: {
+        code: { type: 'number', example: 200 },
+        message: { type: 'string', example: '获取成功' },
+        data: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/AccountWithUserDto' },
+          description: '账号列表',
+        },
+        pagination: {
+          type: 'object',
+          properties: {
+            total: { type: 'number', description: '总记录数' },
+            page: { type: 'number', description: '当前页码' },
+            limit: { type: 'number', description: '每页数量' },
+            totalPages: { type: 'number', description: '总页数' },
+          },
+        },
+      },
+    },
+  })
   @ApiResponse({ status: 401, description: '未授权' })
   async findAll(
     @Request() req: AuthenticatedRequest,
@@ -91,12 +127,12 @@ export class AccountsController {
     return {
       code: 200,
       message: '获取成功',
-      data: result.data,
+      data: result.items,
       pagination: {
         total: result.total,
         page: result.page,
-        limit: result.limit,
-        totalPages: Math.ceil(result.total / result.limit),
+        limit: result.size,
+        totalPages: Math.ceil(result.total / result.size),
       },
     };
   }
@@ -104,25 +140,57 @@ export class AccountsController {
   @Get('admin/all')
   @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiOperation({ summary: '分页获取所有账号列表（管理员专用）' })
-  @ApiQuery({ name: 'page', required: false, description: '页码', example: 1 })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: '页码，默认为1',
+    example: 1,
+  })
   @ApiQuery({
     name: 'limit',
     required: false,
-    description: '每页数量',
+    type: Number,
+    description: '每页数量，默认为10',
     example: 10,
   })
   @ApiQuery({
     name: 'search',
     required: false,
+    type: String,
     description: '搜索关键词（账号名、用户名、邮箱）',
   })
   @ApiQuery({
     name: 'isActive',
     required: false,
-    description: '是否激活',
     type: Boolean,
+    description: '是否激活',
   })
-  @ApiResponse({ status: 200, description: '获取成功' })
+  @ApiResponse({
+    status: 200,
+    description: '获取成功',
+    schema: {
+      type: 'object',
+      properties: {
+        code: { type: 'number', example: 200 },
+        message: { type: 'string', example: '获取成功' },
+        data: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/AccountWithUserDto' },
+          description: '账号列表',
+        },
+        pagination: {
+          type: 'object',
+          properties: {
+            total: { type: 'number', description: '总记录数' },
+            page: { type: 'number', description: '当前页码' },
+            limit: { type: 'number', description: '每页数量' },
+            totalPages: { type: 'number', description: '总页数' },
+          },
+        },
+      },
+    },
+  })
   @ApiResponse({ status: 401, description: '未授权' })
   @ApiResponse({ status: 403, description: '权限不足' })
   async findAllForAdmin(@Query() accountListDto: AccountListDto) {
@@ -131,12 +199,12 @@ export class AccountsController {
     return {
       code: 200,
       message: '获取成功',
-      data: result.data,
+      data: result.items,
       pagination: {
         total: result.total,
         page: result.page,
-        limit: result.limit,
-        totalPages: Math.ceil(result.total / result.limit),
+        limit: result.size,
+        totalPages: Math.ceil(result.total / result.size),
       },
     };
   }

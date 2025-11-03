@@ -46,6 +46,7 @@ describe('ProgressController', () => {
         { progressId: '1', accountId: 'account-1' },
         { progressId: '2', accountId: 'account-2' },
       ];
+      const paginationDto = { page: 1, size: 10 };
 
       mockProgressService.getCurrentWeekProgress.mockResolvedValue(
         mockProgress,
@@ -53,10 +54,12 @@ describe('ProgressController', () => {
 
       const result = await controller.getCurrentWeekProgress(
         mockRequest as any,
+        paginationDto,
       );
 
       expect(mockProgressService.getCurrentWeekProgress).toHaveBeenCalledWith(
         'user-1',
+        paginationDto,
       );
       expect(result).toEqual(mockProgress);
     });

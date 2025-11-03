@@ -139,8 +139,8 @@ export class AuthService {
   async findUsersWithPagination(
     userListDto: UserListDto,
   ): Promise<PaginatedResponse<UserResponseDto>> {
-    const { page = 1, limit = 10, search, role } = userListDto;
-    const skip = (page - 1) * limit;
+    const { page = 1, size = 10, search, role } = userListDto;
+    const skip = (page - 1) * size;
 
     const queryBuilder = this.userRepository.createQueryBuilder('user');
 
@@ -165,7 +165,7 @@ export class AuthService {
     queryBuilder.orderBy('user.createdAt', 'DESC');
 
     // 分页
-    queryBuilder.skip(skip).take(limit);
+    queryBuilder.skip(skip).take(size);
 
     const [users, total] = await queryBuilder.getManyAndCount();
 
@@ -180,6 +180,6 @@ export class AuthService {
       updatedAt: user.updatedAt,
     }));
 
-    return new PaginatedResponse(userResponseDtos, total, page, limit);
+    return new PaginatedResponse(userResponseDtos, total, page, size);
   }
 }

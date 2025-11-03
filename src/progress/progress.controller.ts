@@ -13,11 +13,16 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { ProgressService } from './progress.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UpdateDungeonProgressDto } from './dto/update-dungeon-progress.dto';
 import { UpdateWeeklyTaskProgressDto } from './dto/update-weekly-task-progress.dto';
+import { UpdateSharedDungeonProgressDto } from './dto/update-shared-dungeon-progress.dto';
+import { UpdateSharedWeeklyTaskProgressDto } from './dto/update-shared-weekly-task-progress.dto';
+import { PaginationDto, PaginatedResponse } from '../common/dto/pagination.dto';
+import { WeeklyProgress } from '../entities/weekly-progress.entity';
 
 // 定义认证后的请求接口
 interface AuthenticatedRequest {
@@ -35,10 +40,51 @@ export class ProgressController {
   constructor(private readonly progressService: ProgressService) {}
 
   @Get('current-week')
-  @ApiOperation({ summary: '获取当前周所有账号进度' })
-  @ApiResponse({ status: 200, description: '成功获取当前周进度' })
-  async getCurrentWeekProgress(@Request() req: AuthenticatedRequest) {
-    return this.progressService.getCurrentWeekProgress(req.user.userId);
+  @ApiOperation({ summary: '获取当前周进度（支持分页）' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: '页码，默认为1',
+  })
+  @ApiQuery({
+    name: 'size',
+    required: false,
+    type: Number,
+    description: '每页数量，默认为10',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: '搜索关键词（账号名称）',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '获取成功',
+    schema: {
+      type: 'object',
+      properties: {
+        total: { type: 'number', description: '总记录数' },
+        items: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/WeeklyProgress' },
+          description: '当前周进度列表',
+        },
+        page: { type: 'number', description: '当前页码' },
+        size: { type: 'number', description: '每页数量' },
+        totalPages: { type: 'number', description: '总页数' },
+      },
+    },
+  })
+  async getCurrentWeekProgress(
+    @Request() req: AuthenticatedRequest,
+    @Query() paginationDto: PaginationDto,
+  ): Promise<PaginatedResponse<WeeklyProgress>> {
+    return this.progressService.getCurrentWeekProgress(
+      req.user.userId,
+      paginationDto,
+    );
   }
 
   @Get('account/:accountId')
@@ -91,13 +137,99 @@ export class ProgressController {
   }
 
   @Get('historical')
-  @ApiOperation({ summary: '获取历史周进度' })
-  @ApiResponse({ status: 200, description: '成功获取历史进度' })
+  @ApiOperation({ summary: '获取历史进度（支持分页）' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: '页码，默认为1',
+  })
+  @ApiQuery({
+    name: 'size',
+    required: false,
+    type: Number,
+    description: '每页数量，默认为10',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: '搜索关键词（账号名称）',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '获取成功',
+    schema: {
+      type: 'object',
+      properties: {
+        total: { type: 'number', description: '总记录数' },
+        items: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/WeeklyProgress' },
+          description: '历史进度列表',
+        },
+        page: { type: 'number', description: '当前页码' },
+        size: { type: 'number', description: '每页数量' },
+        totalPages: { type: 'number', description: '总页数' },
+      },
+    },
+  })
   async getHistoricalProgress(
-    @Query('weeks') weeks: number = 4,
+    @Request() req: AuthenticatedRequest,
+    @Query() paginationDto: PaginationDto,
+  ): Promise<PaginatedResponse<WeeklyProgress>> {
+    return this.progressService.getHistoricalProgress(
+      req.user.userId,
+      paginationDto,
+    );
+  }
+
+  // ========== 共享账号进度管理接口 ==========
+
+  @Get('shared-account/:accountName')
+  @ApiOperation({ summary: '获取指定共享账号的当前周进度' })
+  @ApiResponse({ status: 200, description: '成功获取共享账号进度' })
+  @ApiResponse({ status: 404, description: '共享账号不存在' })
+  @ApiResponse({ status: 403, description: '无权访问此共享账号' })
+  async getSharedAccountProgress(
+    @Param('accountName') accountName: string,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.progressService.getHistoricalProgress(req.user.userId, weeks);
+    return this.progressService.getSharedAccountProgress(
+      accountName,
+      req.user.userId,
+    );
+  }
+
+  @Post('shared-account/dungeon')
+  @ApiOperation({ summary: '更新共享账号副本进度' })
+  @ApiResponse({ status: 200, description: '成功更新共享账号副本进度' })
+  @ApiResponse({ status: 404, description: '共享账号不存在' })
+  @ApiResponse({ status: 403, description: '无权访问此共享账号' })
+  async updateSharedDungeonProgress(
+    @Body() updateSharedDungeonProgressDto: UpdateSharedDungeonProgressDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.progressService.updateSharedDungeonProgress(
+      updateSharedDungeonProgressDto,
+      req.user.userId,
+    );
+  }
+
+  @Post('shared-account/weekly-task')
+  @ApiOperation({ summary: '更新共享账号周常任务进度' })
+  @ApiResponse({ status: 200, description: '成功更新共享账号周常任务进度' })
+  @ApiResponse({ status: 404, description: '共享账号不存在' })
+  @ApiResponse({ status: 403, description: '无权访问此共享账号' })
+  async updateSharedWeeklyTaskProgress(
+    @Body()
+    updateSharedWeeklyTaskProgressDto: UpdateSharedWeeklyTaskProgressDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.progressService.updateSharedWeeklyTaskProgress(
+      updateSharedWeeklyTaskProgressDto,
+      req.user.userId,
+    );
   }
 
   @Post('reset-weekly')

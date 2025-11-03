@@ -3,6 +3,8 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { ProgressService } from './progress.service';
 import { WeeklyProgress } from '../entities/weekly-progress.entity';
 import { Account } from '../entities/account.entity';
+import { SharedAccount } from '../entities/shared-account.entity';
+import { SharedAccountPermissionService } from '../shared-accounts/services/shared-account-permission.service';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
 
 // Mock uuid module
@@ -13,18 +15,39 @@ jest.mock('uuid', () => ({
 describe('ProgressService', () => {
   let service: ProgressService;
 
-  const mockProgressRepository = {
+  const mockWeeklyProgressRepository = {
     find: jest.fn(),
     findOne: jest.fn(),
     create: jest.fn(),
     save: jest.fn(),
-    createQueryBuilder: jest.fn(),
+    createQueryBuilder: jest.fn(() => ({
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getCount: jest.fn().mockResolvedValue(1),
+      getMany: jest.fn().mockResolvedValue([mockProgress]),
+      getManyAndCount: jest.fn().mockResolvedValue([[mockProgress], 1]),
+    })),
     count: jest.fn(),
   };
 
   const mockAccountRepository = {
     findOne: jest.fn(),
     find: jest.fn(),
+  };
+
+  const mockSharedAccountRepository = {
+    findOne: jest.fn(),
+    find: jest.fn(),
+  };
+
+  const mockSharedAccountPermissionService = {
+    getAccessibleAccounts: jest.fn(),
+    checkPermission: jest.fn(),
+    validatePermissionOrThrow: jest.fn(),
   };
 
   const mockUser = {
@@ -42,6 +65,16 @@ describe('ProgressService', () => {
     isActive: true,
     userId: 'user-1',
     user: mockUser,
+  };
+
+  const mockSharedAccount = {
+    id: 'shared-account-1',
+    accountName: 'shared-account-1',
+    serverName: '共享服务器',
+    characterName: '共享角色',
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   };
 
   const mockProgress = {
@@ -66,11 +99,19 @@ describe('ProgressService', () => {
         ProgressService,
         {
           provide: getRepositoryToken(WeeklyProgress),
-          useValue: mockProgressRepository,
+          useValue: mockWeeklyProgressRepository,
         },
         {
           provide: getRepositoryToken(Account),
           useValue: mockAccountRepository,
+        },
+        {
+          provide: getRepositoryToken(SharedAccount),
+          useValue: mockSharedAccountRepository,
+        },
+        {
+          provide: SharedAccountPermissionService,
+          useValue: mockSharedAccountPermissionService,
         },
       ],
     }).compile();
@@ -101,24 +142,40 @@ describe('ProgressService', () => {
   describe('getCurrentWeekProgress', () => {
     it('应该返回用户所有账号的当前周进度', async () => {
       const accounts = [mockAccount];
-      const progresses = [mockProgress];
+      const paginationDto = { page: 1, size: 10, search: '' };
 
       mockAccountRepository.find.mockResolvedValue(accounts);
-      mockProgressRepository.find.mockResolvedValue(progresses);
+      mockSharedAccountPermissionService.getAccessibleAccounts.mockResolvedValue(
+        ['shared-account-1'],
+      );
 
-      const result = await service.getCurrentWeekProgress('user-1');
+      // Mock findOne to return null initially (to trigger creation)
+      mockWeeklyProgressRepository.findOne.mockResolvedValue(null);
+      // Mock create and save for new progress creation
+      mockWeeklyProgressRepository.create.mockReturnValue(mockProgress);
+      mockWeeklyProgressRepository.save.mockResolvedValue(mockProgress);
 
-      expect(result).toEqual(progresses);
-      expect(mockAccountRepository.find).toHaveBeenCalledWith({
-        where: { userId: 'user-1' },
-      });
+      const result = await service.getCurrentWeekProgress(
+        'user-1',
+        paginationDto,
+      );
+
+      expect(result).toHaveProperty('items');
+      expect(result).toHaveProperty('total');
+      expect(result).toHaveProperty('page');
+      expect(result).toHaveProperty('size');
+      expect(result).toHaveProperty('totalPages');
+      expect(Array.isArray(result.items)).toBe(true);
+      expect(result.total).toBe(1);
+      expect(result.page).toBe(1);
+      expect(result.size).toBe(10);
     });
   });
 
   describe('getAccountProgress', () => {
     it('应该返回指定账号的当前周进度', async () => {
       mockAccountRepository.findOne.mockResolvedValue(mockAccount);
-      mockProgressRepository.findOne.mockResolvedValue(mockProgress);
+      mockWeeklyProgressRepository.findOne.mockResolvedValue(mockProgress);
 
       const result = await service.getAccountProgress('account-1', 'user-1');
 
@@ -157,8 +214,8 @@ describe('ProgressService', () => {
       };
 
       mockAccountRepository.findOne.mockResolvedValue(mockAccount);
-      mockProgressRepository.findOne.mockResolvedValue(mockProgress);
-      mockProgressRepository.save.mockResolvedValue({
+      mockWeeklyProgressRepository.findOne.mockResolvedValue(mockProgress);
+      mockWeeklyProgressRepository.save.mockResolvedValue({
         ...mockProgress,
         dungeonProgress: {
           ...mockProgress.dungeonProgress,
@@ -169,7 +226,7 @@ describe('ProgressService', () => {
       const result = await service.updateDungeonProgress(updateDto, 'user-1');
 
       expect(result.dungeonProgress['template1_0']).toBe(true);
-      expect(mockProgressRepository.save).toHaveBeenCalled();
+      expect(mockWeeklyProgressRepository.save).toHaveBeenCalled();
     });
 
     it('当账号不存在时应该抛出 NotFoundException', async () => {
@@ -197,8 +254,8 @@ describe('ProgressService', () => {
       };
 
       mockAccountRepository.findOne.mockResolvedValue(mockAccount);
-      mockProgressRepository.findOne.mockResolvedValue(mockProgress);
-      mockProgressRepository.save.mockResolvedValue({
+      mockWeeklyProgressRepository.findOne.mockResolvedValue(mockProgress);
+      mockWeeklyProgressRepository.save.mockResolvedValue({
         ...mockProgress,
         weeklyTaskProgress: {
           ...mockProgress.weeklyTaskProgress,
@@ -212,7 +269,7 @@ describe('ProgressService', () => {
       );
 
       expect(result.weeklyTaskProgress['task1']).toBe(10);
-      expect(mockProgressRepository.save).toHaveBeenCalled();
+      expect(mockWeeklyProgressRepository.save).toHaveBeenCalled();
     });
 
     it('当账号不存在时应该抛出 NotFoundException', async () => {
@@ -233,36 +290,50 @@ describe('ProgressService', () => {
   describe('resetAllWeeklyProgress', () => {
     it('应该成功重置所有周进度', async () => {
       const activeAccounts = [mockAccount];
+      const activeSharedAccounts = ['shared-account-1'];
+
       mockAccountRepository.find.mockResolvedValue(activeAccounts);
-      mockProgressRepository.create.mockReturnValue(mockProgress);
-      mockProgressRepository.save.mockResolvedValue([mockProgress]);
+      mockSharedAccountRepository.find.mockResolvedValue([
+        { accountName: 'shared-account-1', isActive: true },
+      ]);
+      mockWeeklyProgressRepository.create.mockReturnValue(mockProgress);
+      mockWeeklyProgressRepository.save.mockResolvedValue([mockProgress]);
 
       await service.resetAllWeeklyProgress();
 
       expect(mockAccountRepository.find).toHaveBeenCalledWith({
         where: { isActive: true },
       });
-      expect(mockProgressRepository.create).toHaveBeenCalled();
-      expect(mockProgressRepository.save).toHaveBeenCalled();
+      expect(mockWeeklyProgressRepository.create).toHaveBeenCalled();
+      expect(mockWeeklyProgressRepository.save).toHaveBeenCalled();
     });
   });
 
   describe('getProgressStats', () => {
     it('应该返回进度统计信息', async () => {
       const accounts = [mockAccount];
+      const sharedAccounts = [mockSharedAccount];
 
-      mockAccountRepository.find.mockResolvedValueOnce(accounts); // 总账号数
-      mockAccountRepository.find.mockResolvedValueOnce(accounts); // 活跃账号数
-      mockProgressRepository.count.mockResolvedValue(1); // 当前周进度数
+      mockAccountRepository.find.mockResolvedValue(accounts); // 个人账号
+      mockSharedAccountRepository.find.mockResolvedValue(sharedAccounts); // 共享账号
+      mockWeeklyProgressRepository.count.mockResolvedValueOnce(1); // 个人账号进度数
+      mockWeeklyProgressRepository.count.mockResolvedValueOnce(1); // 共享账号进度数
+      mockSharedAccountPermissionService.getAccessibleAccounts.mockResolvedValue(
+        ['shared-account-1'],
+      ); // 可访问的共享账号
 
       const result = await service.getProgressStats('user-1');
 
       expect(result).toHaveProperty('totalAccounts');
       expect(result).toHaveProperty('activeAccounts');
+      expect(result).toHaveProperty('totalSharedAccounts');
+      expect(result).toHaveProperty('activeSharedAccounts');
       expect(result).toHaveProperty('currentWeekProgressCount');
       expect(result.totalAccounts).toBe(1);
       expect(result.activeAccounts).toBe(1);
-      expect(result.currentWeekProgressCount).toBe(1);
+      expect(result.totalSharedAccounts).toBe(1);
+      expect(result.activeSharedAccounts).toBe(1);
+      expect(result.currentWeekProgressCount).toBe(2); // 1个个人账号进度 + 1个共享账号进度
     });
   });
 });

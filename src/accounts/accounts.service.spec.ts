@@ -275,7 +275,7 @@ describe('AccountsService', () => {
       );
 
       expect(result).toBeInstanceOf(PaginatedResponse);
-      expect(result.data).toHaveLength(1);
+      expect(result.items).toHaveLength(1);
       expect(result.total).toBe(1);
       expect(mockQueryBuilder.where).toHaveBeenCalledWith(
         'account.userId = :userId',
@@ -372,10 +372,10 @@ describe('AccountsService', () => {
         await service.findAllAccountsWithPagination(accountListDto);
 
       expect(result).toBeInstanceOf(PaginatedResponse);
-      expect(result.data).toHaveLength(2);
+      expect(result.items).toHaveLength(2);
       expect(result.total).toBe(2);
       expect(result.page).toBe(1);
-      expect(result.limit).toBe(10);
+      expect(result.size).toBe(10);
       expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith(
         'account.createdAt',
         'DESC',
