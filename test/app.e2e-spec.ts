@@ -4,7 +4,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+const request = require('supertest');
 import { AppModule } from './../src/app.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
@@ -17,7 +17,10 @@ describe('AppController (e2e)', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
         AppModule,
-        // 使用内存数据库进行测试
+      ],
+    })
+      .overrideModule(TypeOrmModule)
+      .useModule(
         TypeOrmModule.forRoot({
           type: 'sqlite',
           database: ':memory:',
@@ -25,8 +28,8 @@ describe('AppController (e2e)', () => {
           synchronize: true,
           dropSchema: true,
         }),
-      ],
-    }).compile();
+      )
+      .compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();
