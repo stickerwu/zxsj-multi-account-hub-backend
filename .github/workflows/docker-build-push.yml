@@ -112,7 +112,16 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request'
     
+    # 添加必要的权限以支持 SARIF 文件上传
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    
     steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
       - name: 运行 Trivy 漏洞扫描
         uses: aquasecurity/trivy-action@master
         with:
@@ -121,7 +130,7 @@ jobs:
           output: 'trivy-results.sarif'
 
       - name: 上传 Trivy 扫描结果到 GitHub Security
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
