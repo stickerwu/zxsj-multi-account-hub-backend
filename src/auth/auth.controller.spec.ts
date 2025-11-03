@@ -175,13 +175,13 @@ describe('AuthController', () => {
       expect(result).toEqual({
         code: 200,
         message: '获取成功',
-        data: mockPaginatedResponse.data,
+        data: mockPaginatedResponse.items,
         pagination: {
           total: mockPaginatedResponse.total,
           page: mockPaginatedResponse.page,
-          limit: mockPaginatedResponse.limit,
+          size: mockPaginatedResponse.size,
           totalPages: Math.ceil(
-            mockPaginatedResponse.total / mockPaginatedResponse.limit,
+            mockPaginatedResponse.total / mockPaginatedResponse.size,
           ),
         },
       });
@@ -209,13 +209,13 @@ describe('AuthController', () => {
       expect(result).toEqual({
         code: 200,
         message: '获取成功',
-        data: mockPaginatedResponse.data,
+        data: mockPaginatedResponse.items,
         pagination: {
           total: mockPaginatedResponse.total,
           page: mockPaginatedResponse.page,
-          limit: mockPaginatedResponse.limit,
+          size: mockPaginatedResponse.size,
           totalPages: Math.ceil(
-            mockPaginatedResponse.total / mockPaginatedResponse.limit,
+            mockPaginatedResponse.total / mockPaginatedResponse.size,
           ),
         },
       });
