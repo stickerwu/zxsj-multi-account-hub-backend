@@ -1,6 +1,6 @@
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -8,16 +8,25 @@ import {
   OneToMany,
   JoinColumn,
   Index,
+  BeforeInsert,
 } from 'typeorm';
+import { v4 as uuidv4 } from 'uuid';
 import { User } from './user.entity';
 import { WeeklyProgress } from './weekly-progress.entity';
 
 @Entity('accounts')
 export class Account {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryColumn({ type: 'varchar', length: 36 })
   accountId: string;
 
-  @Column({ type: 'uuid' })
+  @BeforeInsert()
+  generateId() {
+    if (!this.accountId) {
+      this.accountId = uuidv4();
+    }
+  }
+
+  @Column({ type: 'varchar', length: 36 })
   @Index()
   userId: string;
 

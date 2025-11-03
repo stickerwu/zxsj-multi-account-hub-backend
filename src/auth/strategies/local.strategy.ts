@@ -7,13 +7,13 @@ import { AuthService } from '../auth.service';
 export class LocalStrategy extends PassportStrategy(Strategy) {
   constructor(private authService: AuthService) {
     super({
-      usernameField: 'credential', // 使用 credential 字段而不是默认的 username
+      usernameField: 'username', // 使用 username 字段
       passwordField: 'password',
     });
   }
 
-  async validate(credential: string, password: string): Promise<any> {
-    const user = await this.authService.validateUser(credential, password);
+  async validate(username: string, password: string): Promise<any> {
+    const user = await this.authService.validateUser(username, password);
     if (!user) {
       throw new UnauthorizedException('登录凭证或密码错误');
     }

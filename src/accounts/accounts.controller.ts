@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Request,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -15,12 +16,14 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { AccountsService } from './accounts.service';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { UpdateAccountDto } from './dto/update-account.dto';
+import { AccountListDto } from './dto/account-list.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-
+import { AdminGuard } from '../auth/guards/admin.guard';
 // 定义认证后的请求接口
 interface AuthenticatedRequest {
   user: {
@@ -50,22 +53,91 @@ export class AccountsController {
       createAccountDto,
     );
     return {
-      code: 200,
+      code: 201,
       message: '账号创建成功',
-      data: account,
+      data: {
+        ...account,
+        id: account.accountId, // 为了兼容测试脚本，同时提供id字段
+      },
     };
   }
 
   @Get()
-  @ApiOperation({ summary: '获取当前用户的所有账号' })
+  @ApiOperation({ summary: '分页获取当前用户的账号列表（包含用户信息）' })
+  @ApiQuery({ name: 'page', required: false, description: '页码', example: 1 })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: '每页数量',
+    example: 10,
+  })
+  @ApiQuery({ name: 'search', required: false, description: '搜索关键词' })
+  @ApiQuery({
+    name: 'isActive',
+    required: false,
+    description: '是否激活',
+    type: Boolean,
+  })
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiResponse({ status: 401, description: '未授权' })
-  async findAll(@Request() req: AuthenticatedRequest) {
-    const accounts = await this.accountsService.findAllByUser(req.user.userId);
+  async findAll(
+    @Request() req: AuthenticatedRequest,
+    @Query() accountListDto: AccountListDto,
+  ) {
+    const result = await this.accountsService.findAccountsWithPaginationByUser(
+      req.user.userId,
+      accountListDto,
+    );
     return {
       code: 200,
       message: '获取成功',
-      data: accounts,
+      data: result.data,
+      pagination: {
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        totalPages: Math.ceil(result.total / result.limit),
+      },
+    };
+  }
+
+  @Get('admin/all')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiOperation({ summary: '分页获取所有账号列表（管理员专用）' })
+  @ApiQuery({ name: 'page', required: false, description: '页码', example: 1 })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: '每页数量',
+    example: 10,
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: '搜索关键词（账号名、用户名、邮箱）',
+  })
+  @ApiQuery({
+    name: 'isActive',
+    required: false,
+    description: '是否激活',
+    type: Boolean,
+  })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  @ApiResponse({ status: 401, description: '未授权' })
+  @ApiResponse({ status: 403, description: '权限不足' })
+  async findAllForAdmin(@Query() accountListDto: AccountListDto) {
+    const result =
+      await this.accountsService.findAllAccountsWithPagination(accountListDto);
+    return {
+      code: 200,
+      message: '获取成功',
+      data: result.data,
+      pagination: {
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        totalPages: Math.ceil(result.total / result.limit),
+      },
     };
   }
 

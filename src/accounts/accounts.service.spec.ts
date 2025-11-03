@@ -4,6 +4,8 @@ import { AccountsService } from './accounts.service';
 import { Account } from '../entities/account.entity';
 import { User } from '../entities/user.entity';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
+import { AccountListDto } from './dto/account-list.dto';
+import { PaginatedResponse } from '../common/dto/pagination.dto';
 
 // Mock UUID module
 jest.mock('uuid', () => ({
@@ -19,6 +21,7 @@ describe('AccountsService', () => {
     create: jest.fn(),
     save: jest.fn(),
     remove: jest.fn(),
+    createQueryBuilder: jest.fn(),
   };
 
   const mockUserRepository = {
@@ -226,6 +229,212 @@ describe('AccountsService', () => {
 
       await expect(service.remove('account-1', 'user-1')).rejects.toThrow(
         ForbiddenException,
+      );
+    });
+  });
+
+  describe('findAccountsWithPaginationByUser', () => {
+    const mockQueryBuilder = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getManyAndCount: jest.fn(),
+    };
+
+    beforeEach(() => {
+      mockAccountRepository.createQueryBuilder.mockReturnValue(
+        mockQueryBuilder,
+      );
+    });
+
+    it('应该返回用户的分页账号列表', async () => {
+      const accountListDto: AccountListDto = {
+        page: 1,
+        limit: 10,
+      };
+
+      const mockAccounts = [
+        {
+          accountId: 'account-1',
+          name: '测试账号1',
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          user: mockUser,
+        },
+      ];
+
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([mockAccounts, 1]);
+
+      const result = await service.findAccountsWithPaginationByUser(
+        'user-1',
+        accountListDto,
+      );
+
+      expect(result).toBeInstanceOf(PaginatedResponse);
+      expect(result.data).toHaveLength(1);
+      expect(result.total).toBe(1);
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        'account.userId = :userId',
+        { userId: 'user-1' },
+      );
+    });
+
+    it('应该支持搜索功能', async () => {
+      const accountListDto: AccountListDto = {
+        page: 1,
+        limit: 10,
+        search: 'test',
+      };
+
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0]);
+
+      await service.findAccountsWithPaginationByUser('user-1', accountListDto);
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'account.name LIKE :search',
+        { search: '%test%' },
+      );
+    });
+
+    it('应该支持状态筛选', async () => {
+      const accountListDto: AccountListDto = {
+        page: 1,
+        limit: 10,
+        isActive: true,
+      };
+
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0]);
+
+      await service.findAccountsWithPaginationByUser('user-1', accountListDto);
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'account.isActive = :isActive',
+        { isActive: true },
+      );
+    });
+  });
+
+  describe('findAllAccountsWithPagination', () => {
+    const mockQueryBuilder = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getManyAndCount: jest.fn(),
+    };
+
+    beforeEach(() => {
+      mockAccountRepository.createQueryBuilder.mockReturnValue(
+        mockQueryBuilder,
+      );
+    });
+
+    it('应该返回所有账号的分页列表（管理员专用）', async () => {
+      const accountListDto: AccountListDto = {
+        page: 1,
+        limit: 10,
+      };
+
+      const mockAccounts = [
+        {
+          accountId: 'account-1',
+          name: '测试账号1',
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          user: mockUser,
+        },
+        {
+          accountId: 'account-2',
+          name: '测试账号2',
+          isActive: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          user: {
+            userId: 'user-2',
+            username: 'testuser2',
+            email: 'test2@example.com',
+            phone: '13800138002',
+            role: 'user',
+          },
+        },
+      ];
+
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([mockAccounts, 2]);
+
+      const result =
+        await service.findAllAccountsWithPagination(accountListDto);
+
+      expect(result).toBeInstanceOf(PaginatedResponse);
+      expect(result.data).toHaveLength(2);
+      expect(result.total).toBe(2);
+      expect(result.page).toBe(1);
+      expect(result.limit).toBe(10);
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith(
+        'account.createdAt',
+        'DESC',
+      );
+    });
+
+    it('应该支持搜索功能（账号名、用户名、邮箱）', async () => {
+      const accountListDto: AccountListDto = {
+        page: 1,
+        limit: 10,
+        search: 'test',
+      };
+
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0]);
+
+      await service.findAllAccountsWithPagination(accountListDto);
+
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        '(account.name LIKE :search OR user.username LIKE :search OR user.email LIKE :search)',
+        { search: '%test%' },
+      );
+    });
+
+    it('应该支持状态筛选', async () => {
+      const accountListDto: AccountListDto = {
+        page: 1,
+        limit: 10,
+        isActive: false,
+      };
+
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0]);
+
+      await service.findAllAccountsWithPagination(accountListDto);
+
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        'account.isActive = :isActive',
+        { isActive: false },
+      );
+    });
+
+    it('应该支持搜索和状态筛选组合', async () => {
+      const accountListDto: AccountListDto = {
+        page: 1,
+        limit: 10,
+        search: 'test',
+        isActive: true,
+      };
+
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0]);
+
+      await service.findAllAccountsWithPagination(accountListDto);
+
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        '(account.name LIKE :search OR user.username LIKE :search OR user.email LIKE :search)',
+        { search: '%test%' },
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'account.isActive = :isActive',
+        { isActive: true },
       );
     });
   });

@@ -3,10 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { v4 as uuidv4 } from 'uuid';
 import { User } from '../entities/user.entity';
 import { RegisterDto } from './dto/register.dto';
 import { JwtPayload } from './strategies/jwt.strategy';
+import { UserListDto, UserResponseDto } from './dto/user-list.dto';
+import { PaginatedResponse } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class AuthService {
@@ -51,7 +52,6 @@ export class AuthService {
 
     // 创建新用户
     const newUser = this.userRepository.create({
-      userId: uuidv4(),
       username,
       email,
       phone,
@@ -131,5 +131,55 @@ export class AuthService {
     return this.userRepository.findOne({
       where: { userId },
     });
+  }
+
+  /**
+   * 分页查询用户列表（管理员专用）
+   */
+  async findUsersWithPagination(
+    userListDto: UserListDto,
+  ): Promise<PaginatedResponse<UserResponseDto>> {
+    const { page = 1, limit = 10, search, role } = userListDto;
+    const skip = (page - 1) * limit;
+
+    const queryBuilder = this.userRepository.createQueryBuilder('user');
+
+    // 搜索条件
+    if (search) {
+      queryBuilder.where(
+        '(user.username LIKE :search OR user.email LIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    // 角色筛选
+    if (role) {
+      if (search) {
+        queryBuilder.andWhere('user.role = :role', { role });
+      } else {
+        queryBuilder.where('user.role = :role', { role });
+      }
+    }
+
+    // 排序
+    queryBuilder.orderBy('user.createdAt', 'DESC');
+
+    // 分页
+    queryBuilder.skip(skip).take(limit);
+
+    const [users, total] = await queryBuilder.getManyAndCount();
+
+    // 转换为响应DTO，排除密码字段
+    const userResponseDtos: UserResponseDto[] = users.map((user) => ({
+      userId: user.userId,
+      username: user.username,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    }));
+
+    return new PaginatedResponse(userResponseDtos, total, page, limit);
   }
 }

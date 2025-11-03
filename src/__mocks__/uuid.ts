@@ -1,0 +1,6 @@
+// Mock UUID module for Jest tests
+export const v4 = jest.fn(() => 'mock-uuid-v4');
+
+export default {
+  v4,
+};

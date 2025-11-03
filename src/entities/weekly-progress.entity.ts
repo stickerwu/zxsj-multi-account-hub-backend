@@ -1,13 +1,15 @@
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
   Index,
   Unique,
+  BeforeInsert,
 } from 'typeorm';
+import { v4 as uuidv4 } from 'uuid';
 import { Account } from './account.entity';
 
 // 副本进度数据结构：{ "templateId_bossIndex": boolean }
@@ -23,10 +25,17 @@ export interface WeeklyTaskProgressData {
 @Entity('weekly_progress')
 @Unique(['accountId', 'weekStart']) // 确保每个角色每周只有一条进度记录
 export class WeeklyProgress {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryColumn({ type: 'varchar', length: 36 })
   progressId: string;
 
-  @Column({ type: 'uuid' })
+  @BeforeInsert()
+  generateId() {
+    if (!this.progressId) {
+      this.progressId = uuidv4();
+    }
+  }
+
+  @Column({ type: 'varchar', length: 36 })
   @Index()
   accountId: string;
 

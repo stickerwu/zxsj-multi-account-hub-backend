@@ -4,12 +4,17 @@ import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { AppModule } from './app.module';
+import { AllExceptionsFilter } from './common/filters/http-exception.filter';
+import { DatabaseInitService } from './database/database-init.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // 获取配置服务
   const configService = app.get(ConfigService);
+
+  // 启用全局异常过滤器
+  app.useGlobalFilters(new AllExceptionsFilter());
 
   // 启用全局验证管道
   app.useGlobalPipes(
@@ -80,6 +85,15 @@ async function bootstrap() {
       environment: configService.get<string>('NODE_ENV'),
     });
   });
+
+  // 初始化数据库
+  try {
+    const databaseInitService = app.get(DatabaseInitService);
+    await databaseInitService.initializeDatabase();
+  } catch (error) {
+    console.error('数据库初始化失败:', error);
+    // 不退出应用，允许继续启动
+  }
 
   const port = configService.get<number>('PORT') || 3000;
   await app.listen(port);

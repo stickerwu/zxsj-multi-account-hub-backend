@@ -160,8 +160,7 @@ test_account_management() {
     # 创建账号
     local account_data='{
         "accountName": "测试账号1",
-        "serverName": "测试服务器",
-        "characterName": "测试角色"
+        "isActive": true
     }'
     
     local response=$(test_api "POST" "/accounts" "$account_data" "201" "创建账号" "$auth_header")
@@ -181,13 +180,13 @@ test_account_management() {
         # 更新账号
         local update_data='{
             "accountName": "更新后的账号名",
-            "isEnabled": false
+            "isActive": false
         }'
         
         test_api "PUT" "/accounts/$ACCOUNT_ID" "$update_data" "200" "更新账号" "$auth_header"
         
         # 重新启用账号（用于后续测试）
-        local enable_data='{"isEnabled": true}'
+        local enable_data='{"isActive": true}'
         test_api "PUT" "/accounts/$ACCOUNT_ID" "$enable_data" "200" "重新启用账号" "$auth_header"
     fi
     

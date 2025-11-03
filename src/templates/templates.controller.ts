@@ -23,6 +23,7 @@ import { UpdateDungeonTemplateDto } from './dto/update-dungeon-template.dto';
 import { CreateWeeklyTaskTemplateDto } from './dto/create-weekly-task-template.dto';
 import { UpdateWeeklyTaskTemplateDto } from './dto/update-weekly-task-template.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AdminGuard } from '../auth/guards/admin.guard';
 
 @ApiTags('模板管理')
 @ApiBearerAuth()
@@ -34,10 +35,12 @@ export class TemplatesController {
   // ==================== 副本模板接口 ====================
 
   @Post('dungeons')
-  @ApiOperation({ summary: '创建副本模板' })
+  @UseGuards(AdminGuard)
+  @ApiOperation({ summary: '创建副本模板（仅管理员）' })
   @ApiResponse({ status: 201, description: '副本模板创建成功' })
   @ApiResponse({ status: 400, description: '请求参数错误' })
   @ApiResponse({ status: 401, description: '未授权' })
+  @ApiResponse({ status: 403, description: '需要管理员权限' })
   async createDungeonTemplate(
     @Body() createDungeonTemplateDto: CreateDungeonTemplateDto,
   ) {
@@ -84,11 +87,13 @@ export class TemplatesController {
   }
 
   @Patch('dungeons/:id')
-  @ApiOperation({ summary: '更新副本模板' })
+  @UseGuards(AdminGuard)
+  @ApiOperation({ summary: '更新副本模板（仅管理员）' })
   @ApiParam({ name: 'id', description: '副本模板ID' })
   @ApiResponse({ status: 200, description: '更新成功' })
   @ApiResponse({ status: 404, description: '副本模板不存在' })
   @ApiResponse({ status: 401, description: '未授权' })
+  @ApiResponse({ status: 403, description: '需要管理员权限' })
   async updateDungeonTemplate(
     @Param('id') id: string,
     @Body() updateDungeonTemplateDto: UpdateDungeonTemplateDto,
@@ -105,11 +110,13 @@ export class TemplatesController {
   }
 
   @Delete('dungeons/:id')
-  @ApiOperation({ summary: '删除副本模板' })
+  @UseGuards(AdminGuard)
+  @ApiOperation({ summary: '删除副本模板（仅管理员）' })
   @ApiParam({ name: 'id', description: '副本模板ID' })
   @ApiResponse({ status: 200, description: '删除成功' })
   @ApiResponse({ status: 404, description: '副本模板不存在' })
   @ApiResponse({ status: 401, description: '未授权' })
+  @ApiResponse({ status: 403, description: '需要管理员权限' })
   async removeDungeonTemplate(@Param('id') id: string) {
     await this.templatesService.removeDungeonTemplate(id);
     return {
@@ -121,10 +128,12 @@ export class TemplatesController {
   // ==================== 周常任务模板接口 ====================
 
   @Post('weekly-tasks')
-  @ApiOperation({ summary: '创建周常任务模板' })
+  @UseGuards(AdminGuard)
+  @ApiOperation({ summary: '创建周常任务模板（仅管理员）' })
   @ApiResponse({ status: 201, description: '周常任务模板创建成功' })
   @ApiResponse({ status: 400, description: '请求参数错误' })
   @ApiResponse({ status: 401, description: '未授权' })
+  @ApiResponse({ status: 403, description: '需要管理员权限' })
   async createWeeklyTaskTemplate(
     @Body() createWeeklyTaskTemplateDto: CreateWeeklyTaskTemplateDto,
   ) {
@@ -171,11 +180,13 @@ export class TemplatesController {
   }
 
   @Patch('weekly-tasks/:id')
-  @ApiOperation({ summary: '更新周常任务模板' })
+  @UseGuards(AdminGuard)
+  @ApiOperation({ summary: '更新周常任务模板（仅管理员）' })
   @ApiParam({ name: 'id', description: '周常任务模板ID' })
   @ApiResponse({ status: 200, description: '更新成功' })
   @ApiResponse({ status: 404, description: '周常任务模板不存在' })
   @ApiResponse({ status: 401, description: '未授权' })
+  @ApiResponse({ status: 403, description: '需要管理员权限' })
   async updateWeeklyTaskTemplate(
     @Param('id') id: string,
     @Body() updateWeeklyTaskTemplateDto: UpdateWeeklyTaskTemplateDto,
@@ -192,11 +203,13 @@ export class TemplatesController {
   }
 
   @Delete('weekly-tasks/:id')
-  @ApiOperation({ summary: '删除周常任务模板' })
+  @UseGuards(AdminGuard)
+  @ApiOperation({ summary: '删除周常任务模板（仅管理员）' })
   @ApiParam({ name: 'id', description: '周常任务模板ID' })
   @ApiResponse({ status: 200, description: '删除成功' })
   @ApiResponse({ status: 404, description: '周常任务模板不存在' })
   @ApiResponse({ status: 401, description: '未授权' })
+  @ApiResponse({ status: 403, description: '需要管理员权限' })
   async removeWeeklyTaskTemplate(@Param('id') id: string) {
     await this.templatesService.removeWeeklyTaskTemplate(id);
     return {

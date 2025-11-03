@@ -1,33 +1,46 @@
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
-  Index,
+  BeforeInsert,
 } from 'typeorm';
+import { v4 as uuidv4 } from 'uuid';
 import { Account } from './account.entity';
 
 @Entity('users')
 export class User {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryColumn({ type: 'varchar', length: 36 })
   userId: string;
 
+  @BeforeInsert()
+  generateId() {
+    if (!this.userId) {
+      this.userId = uuidv4();
+    }
+  }
+
   @Column({ type: 'varchar', length: 50, unique: true })
-  @Index()
   username: string;
 
   @Column({ type: 'varchar', length: 100, nullable: true, unique: true })
-  @Index()
   email: string;
 
   @Column({ type: 'varchar', length: 20, nullable: true, unique: true })
-  @Index()
   phone: string;
 
   @Column({ type: 'varchar', length: 255 })
   passwordHash: string;
+
+  @Column({
+    type: 'enum',
+    enum: ['admin', 'user'],
+    default: 'user',
+    comment: '用户角色：admin-管理员，user-普通用户',
+  })
+  role: 'admin' | 'user';
 
   @CreateDateColumn()
   createdAt: Date;

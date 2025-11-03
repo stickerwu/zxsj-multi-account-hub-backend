@@ -10,6 +10,8 @@ import { Account } from '../entities/account.entity';
 import { User } from '../entities/user.entity';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { UpdateAccountDto } from './dto/update-account.dto';
+import { AccountListDto, AccountWithUserDto } from './dto/account-list.dto';
+import { PaginatedResponse } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class AccountsService {
@@ -36,7 +38,7 @@ export class AccountsService {
     const account = this.accountRepository.create({
       accountId: uuidv4(),
       userId,
-      name: createAccountDto.name,
+      name: createAccountDto.accountName, // 使用accountName字段
       isActive: createAccountDto.isActive ?? true,
     });
 
@@ -51,6 +53,62 @@ export class AccountsService {
       where: { userId },
       order: { createdAt: 'DESC' },
     });
+  }
+
+  /**
+   * 分页获取用户的账号列表（包含用户信息）
+   */
+  async findAccountsWithPaginationByUser(
+    userId: string,
+    accountListDto: AccountListDto,
+  ): Promise<PaginatedResponse<AccountWithUserDto>> {
+    const { page = 1, limit = 10, search, isActive } = accountListDto;
+    const skip = (page - 1) * limit;
+
+    const queryBuilder = this.accountRepository
+      .createQueryBuilder('account')
+      .leftJoinAndSelect('account.user', 'user')
+      .where('account.userId = :userId', { userId });
+
+    // 搜索条件
+    if (search) {
+      queryBuilder.andWhere('account.name LIKE :search', {
+        search: `%${search}%`,
+      });
+    }
+
+    // 状态筛选
+    if (isActive !== undefined) {
+      queryBuilder.andWhere('account.isActive = :isActive', { isActive });
+    }
+
+    // 排序
+    queryBuilder.orderBy('account.createdAt', 'DESC');
+
+    // 分页
+    queryBuilder.skip(skip).take(limit);
+
+    const [accounts, total] = await queryBuilder.getManyAndCount();
+
+    // 转换为响应DTO
+    const accountWithUserDtos: AccountWithUserDto[] = accounts.map(
+      (account) => ({
+        accountId: account.accountId,
+        name: account.name,
+        isActive: account.isActive,
+        createdAt: account.createdAt,
+        updatedAt: account.updatedAt,
+        user: {
+          userId: account.user.userId,
+          username: account.user.username,
+          email: account.user.email,
+          phone: account.user.phone,
+          role: account.user.role,
+        },
+      }),
+    );
+
+    return new PaginatedResponse(accountWithUserDtos, total, page, limit);
   }
 
   /**
@@ -142,5 +200,64 @@ export class AccountsService {
     });
 
     return this.accountRepository.save(accounts);
+  }
+
+  /**
+   * 分页获取所有账号列表（管理员专用）
+   */
+  async findAllAccountsWithPagination(
+    accountListDto: AccountListDto,
+  ): Promise<PaginatedResponse<AccountWithUserDto>> {
+    const { page = 1, limit = 10, search, isActive } = accountListDto;
+    const skip = (page - 1) * limit;
+
+    const queryBuilder = this.accountRepository
+      .createQueryBuilder('account')
+      .leftJoinAndSelect('account.user', 'user');
+
+    // 搜索条件
+    if (search) {
+      queryBuilder.where(
+        '(account.name LIKE :search OR user.username LIKE :search OR user.email LIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    // 状态筛选
+    if (isActive !== undefined) {
+      if (search) {
+        queryBuilder.andWhere('account.isActive = :isActive', { isActive });
+      } else {
+        queryBuilder.where('account.isActive = :isActive', { isActive });
+      }
+    }
+
+    // 排序
+    queryBuilder.orderBy('account.createdAt', 'DESC');
+
+    // 分页
+    queryBuilder.skip(skip).take(limit);
+
+    const [accounts, total] = await queryBuilder.getManyAndCount();
+
+    // 转换为响应DTO
+    const accountWithUserDtos: AccountWithUserDto[] = accounts.map(
+      (account) => ({
+        accountId: account.accountId,
+        name: account.name,
+        isActive: account.isActive,
+        createdAt: account.createdAt,
+        updatedAt: account.updatedAt,
+        user: {
+          userId: account.user.userId,
+          username: account.user.username,
+          email: account.user.email,
+          phone: account.user.phone,
+          role: account.user.role,
+        },
+      }),
+    );
+
+    return new PaginatedResponse(accountWithUserDtos, total, page, limit);
   }
 }

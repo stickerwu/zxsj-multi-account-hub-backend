@@ -14,6 +14,7 @@ import { Account } from './entities/account.entity';
 import { DungeonTemplate } from './entities/dungeon-template.entity';
 import { WeeklyTaskTemplate } from './entities/weekly-task-template.entity';
 import { WeeklyProgress } from './entities/weekly-progress.entity';
+import { DatabaseInitService } from './database/database-init.service';
 
 @Module({
   imports: [
@@ -36,7 +37,7 @@ import { WeeklyProgress } from './entities/weekly-progress.entity';
           WeeklyTaskTemplate,
           WeeklyProgress,
         ],
-        synchronize: false,
+        synchronize: false, // 使用手动 SQL 脚本初始化
         timezone: '+08:00', // 设置为北京时间
         charset: 'utf8mb4', // 支持完整的 UTF-8 字符集，包括 emoji
         logging: process.env.NODE_ENV === 'development', // 开发环境启用日志
@@ -50,6 +51,6 @@ import { WeeklyProgress } from './entities/weekly-progress.entity';
     SchedulerModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, DatabaseInitService],
 })
 export class AppModule {}

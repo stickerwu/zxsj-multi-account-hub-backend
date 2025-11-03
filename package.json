@@ -33,6 +33,7 @@
     "@nestjs/schedule": "^6.0.1",
     "@nestjs/swagger": "^11.2.1",
     "@nestjs/typeorm": "^11.0.0",
+    "axios": "^1.13.1",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
@@ -94,11 +95,8 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
-    "transformIgnorePatterns": [
-      "node_modules/(?!(uuid)/)"
-    ],
     "moduleNameMapper": {
-      "^uuid$": "<rootDir>/../node_modules/uuid/dist/index.js"
+      "^uuid$": "<rootDir>/__mocks__/uuid.ts"
     }
   }
 }
