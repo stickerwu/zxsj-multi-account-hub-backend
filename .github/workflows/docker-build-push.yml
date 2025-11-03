@@ -21,7 +21,9 @@ on:
 env:
   # Docker Hub 或其他容器注册表配置
   REGISTRY: docker.io
-  IMAGE_NAME: zxsj-multi-account-hub-backend
+  # 注意：这里需要包含 Docker Hub 用户名，格式为 username/repository-name
+  # 请将 YOUR_DOCKERHUB_USERNAME 替换为实际的 Docker Hub 用户名
+  IMAGE_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}/zxsj-multi-account-hub-backend
 
 jobs:
   # 代码质量检查和测试
@@ -32,28 +34,23 @@ jobs:
       - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: 安装 pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: latest
-
       - name: 设置 Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'pnpm'
+          cache: 'npm'
 
       - name: 安装依赖
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
       - name: 代码格式检查
-        run: pnpm run lint
+        run: npm run lint
 
       - name: 运行单元测试
-        run: pnpm run test
+        run: npm run test
 
       - name: 构建应用
-        run: pnpm run build
+        run: npm run build
 
   # 构建和推送 Docker 镜像
   docker:
@@ -75,8 +72,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
       - name: 提取元数据
         id: meta
