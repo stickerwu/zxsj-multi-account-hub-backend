@@ -50,6 +50,9 @@ export class DatabaseInitService {
       } else {
         this.logger.log('所有必要的表都已存在');
       }
+
+      // 无论是否缺表，均在启动时执行管理员账号验证与同步，确保与 .env 配置一致
+      await this.verifyAndSyncDefaultAdmin();
     } catch (error) {
       this.logger.error('数据库初始化失败:', error);
       throw error;
@@ -139,7 +142,7 @@ export class DatabaseInitService {
         await this.insertDefaultWeeklyTaskTemplates();
       }
 
-      // 检查并创建默认管理员账号
+      // 检查并创建默认管理员账号（首次初始化场景）
       await this.createDefaultAdminUser();
     } catch (error) {
       this.logger.error('插入默认数据失败:', error);
@@ -205,32 +208,155 @@ export class DatabaseInitService {
   }
 
   /**
+   * 验证并同步默认管理员账号到 .env 配置
+   * 该方法在每次应用启动时都会执行，确保管理员账号与 .env 保持一致。
+   */
+  private async verifyAndSyncDefaultAdmin(): Promise<void> {
+    try {
+      // 从 .env 读取管理员配置，不再使用任何硬编码默认值（安全要求）
+      const adminUsername = this.configService.get<string>(
+        'DEFAULT_ADMIN_USERNAME',
+      );
+      const adminPassword = this.configService.get<string>(
+        'DEFAULT_ADMIN_PASSWORD',
+      );
+      const adminEmail = this.configService.get<string>('DEFAULT_ADMIN_EMAIL');
+      const nodeEnv =
+        this.configService.get<string>('NODE_ENV') ||
+        process.env.NODE_ENV ||
+        'development';
+
+      // 若任一关键配置缺失，则记录警告并跳过自动同步，避免使用不安全的默认值
+      if (!adminUsername || !adminPassword || !adminEmail) {
+        this.logger.warn(
+          '默认管理员配置缺失：必须在 .env 中设置 DEFAULT_ADMIN_USERNAME / DEFAULT_ADMIN_PASSWORD / DEFAULT_ADMIN_EMAIL。已跳过自动同步。',
+        );
+        return;
+      }
+
+      // 生产环境下进行弱密码阻断：长度与复杂度要求（防止弱口令被使用）
+      if (nodeEnv === 'production' && this.isWeakPassword(adminPassword)) {
+        this.logger.error(
+          '生产环境检测到弱密码：请在 .env 中为 DEFAULT_ADMIN_PASSWORD 设置更复杂的强密码。已阻断自动同步。',
+        );
+        return;
+      }
+      // 删除嵌入的弱密码检测函数，方法已移至类内部
+      // 优先按用户名查找（确保与 .env 指定的用户名一致）
+      const usersByUsername = await this.dataSource.query(
+        'SELECT userId, username, email, passwordHash, role FROM users WHERE username = ?',
+        [adminUsername],
+      );
+
+      if (usersByUsername.length > 0) {
+        const user = usersByUsername[0];
+        let needUpdate = false;
+        let newPasswordHash = user.passwordHash;
+
+        // 若角色不是 admin，则同步为管理员角色
+        if (user.role !== 'admin') {
+          needUpdate = true;
+        }
+
+        // 验证密码是否与 .env 一致，不一致则重新哈希并更新
+        const passwordMatch = await bcrypt
+          .compare(adminPassword, user.passwordHash)
+          .catch(() => false);
+        if (!passwordMatch) {
+          newPasswordHash = await bcrypt.hash(adminPassword, 10);
+          needUpdate = true;
+        }
+
+        // 邮箱不同则更新
+        if (user.email !== adminEmail) {
+          needUpdate = true;
+        }
+
+        if (needUpdate) {
+          await this.dataSource.query(
+            `UPDATE users SET email = ?, passwordHash = ?, role = 'admin', updatedAt = NOW() WHERE userId = ?`,
+            [adminEmail, newPasswordHash, user.userId],
+          );
+          this.logger.log(`默认管理员账号已同步到 .env 配置: ${adminUsername}`);
+        } else {
+          this.logger.log(`默认管理员账号已与 .env 配置一致: ${adminUsername}`);
+        }
+        return;
+      }
+
+      // 若不存在 .env 指定的用户名，检查是否已有任意管理员账号
+      const existingAdmin = await this.dataSource.query(
+        'SELECT userId FROM users WHERE role = ? LIMIT 1',
+        ['admin'],
+      );
+
+      if (existingAdmin.length > 0) {
+        // 出于安全与谨慎，不强制覆盖其他管理员；提示日志供人工处理
+        this.logger.warn(
+          '检测到已存在管理员账号，但与 .env 指定的用户名不同。为避免风险，已跳过自动覆盖，请人工确认是否需要迁移到 .env 配置。',
+        );
+        return;
+      }
+
+      // 如果没有任何管理员，按 .env 创建默认管理员
+      await this.createDefaultAdminUser();
+    } catch (error) {
+      this.logger.error('验证/同步默认管理员账号失败:', error);
+      // 不抛出错误，避免影响其他初始化流程
+    }
+  }
+
+  /**
    * 创建默认管理员用户
    */
   private async createDefaultAdminUser(): Promise<void> {
     try {
-      // 从环境变量获取管理员配置
+      // 从 .env 读取管理员配置，不再使用任何硬编码默认值（安全要求）
       const adminUsername = this.configService.get<string>(
         'DEFAULT_ADMIN_USERNAME',
-        'stickerwu',
       );
       const adminPassword = this.configService.get<string>(
         'DEFAULT_ADMIN_PASSWORD',
-        'wuCHANGWEI0519',
       );
-      const adminEmail = this.configService.get<string>(
-        'DEFAULT_ADMIN_EMAIL',
-        'admin@zxsj.com',
+      const adminEmail = this.configService.get<string>('DEFAULT_ADMIN_EMAIL');
+      const nodeEnv =
+        this.configService.get<string>('NODE_ENV') ||
+        process.env.NODE_ENV ||
+        'development';
+
+      // 先检查是否提供了管理员用户名；若缺失则无法进行存在性检查
+      if (!adminUsername) {
+        this.logger.warn(
+          '默认管理员创建被跳过：必须在 .env 中至少设置 DEFAULT_ADMIN_USERNAME；其余配置信息缺失时将无法创建。',
+        );
+        return;
+      }
+
+      // 检查管理员用户是否已存在（按用户名避免被其他管理员阻断创建）
+      const existingUserByName = await this.dataSource.query(
+        'SELECT COUNT(*) as count FROM users WHERE username = ?',
+        [adminUsername],
       );
 
-      // 检查管理员用户是否已存在
-      const existingAdmin = await this.dataSource.query(
-        'SELECT COUNT(*) as count FROM users WHERE username = ? OR role = ?',
-        [adminUsername, 'admin'],
-      );
-
-      if (existingAdmin[0].count > 0) {
+      if (existingUserByName[0].count > 0) {
+        // 与测试断言保持一致：提示已存在并跳过创建
         this.logger.log('默认管理员账号已存在，跳过创建');
+        return;
+      }
+
+      // 若密码或邮箱缺失，则记录警告并跳过创建，避免使用不安全的默认值
+      if (!adminPassword || !adminEmail) {
+        this.logger.warn(
+          '默认管理员创建被跳过：必须在 .env 中设置 DEFAULT_ADMIN_PASSWORD / DEFAULT_ADMIN_EMAIL。',
+        );
+        return;
+      }
+
+      // 生产环境下进行弱密码阻断：长度与复杂度要求（防止弱口令被使用）
+      if (nodeEnv === 'production' && this.isWeakPassword(adminPassword)) {
+        this.logger.error(
+          '生产环境检测到弱密码：请在 .env 中为 DEFAULT_ADMIN_PASSWORD 设置更复杂的强密码。已阻断默认管理员创建。',
+        );
         return;
       }
 
@@ -243,7 +369,7 @@ export class DatabaseInitService {
       // 生成用户ID
       const userId = uuidv4();
 
-      // 插入管理员用户
+      // 插入管理员用户（不在日志输出敏感信息）
       await this.dataSource.query(
         `INSERT INTO users (userId, username, email, passwordHash, role, createdAt, updatedAt) 
          VALUES (?, ?, ?, ?, 'admin', NOW(), NOW())`,
@@ -255,5 +381,16 @@ export class DatabaseInitService {
       this.logger.error('创建默认管理员账号失败:', error);
       // 不抛出错误，避免影响其他初始化流程
     }
+  }
+
+  // 弱密码检测：长度>=12，且包含大小写字母、数字与特殊字符
+  private isWeakPassword(password: string): boolean {
+    if (!password) return true;
+    const lengthOk = password.length >= 12;
+    const hasUpper = /[A-Z]/.test(password);
+    const hasLower = /[a-z]/.test(password);
+    const hasDigit = /\d/.test(password);
+    const hasSpecial = /[^\w]/.test(password);
+    return !(lengthOk && hasUpper && hasLower && hasDigit && hasSpecial);
   }
 }
