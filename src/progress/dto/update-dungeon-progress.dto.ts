@@ -6,7 +6,7 @@ export class UpdateDungeonProgressDto {
     description: '账号ID',
     example: '123e4567-e89b-12d3-a456-426614174000',
     type: 'string',
-    format: 'uuid'
+    format: 'uuid',
   })
   @IsUUID('4', { message: '账号ID格式错误' })
   accountId: string;
@@ -14,7 +14,7 @@ export class UpdateDungeonProgressDto {
   @ApiProperty({
     description: '副本名称',
     example: '魔兽世界副本',
-    type: 'string'
+    type: 'string',
   })
   @IsString()
   dungeonName: string;
@@ -22,7 +22,7 @@ export class UpdateDungeonProgressDto {
   @ApiProperty({
     description: 'Boss名称',
     example: '伊利丹',
-    type: 'string'
+    type: 'string',
   })
   @IsString()
   bossName: string;
@@ -32,7 +32,7 @@ export class UpdateDungeonProgressDto {
     example: 5,
     type: 'number',
     minimum: 0,
-    maximum: 999
+    maximum: 999,
   })
   @IsNumber({}, { message: '击杀次数必须是数字' })
   @Min(0, { message: '击杀次数不能小于0' })

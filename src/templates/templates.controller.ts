@@ -177,7 +177,10 @@ export class TemplatesController {
   @Post('weekly-tasks')
   @UseGuards(AdminGuard)
   @ApiOperation({ summary: '创建周常任务模板（仅管理员）' })
-  @ApiBody({ type: CreateWeeklyTaskTemplateDto, description: '周常任务模板创建信息' })
+  @ApiBody({
+    type: CreateWeeklyTaskTemplateDto,
+    description: '周常任务模板创建信息',
+  })
   @ApiResponse({ status: 201, description: '周常任务模板创建成功' })
   @ApiResponse({ status: 400, description: '请求参数错误' })
   @ApiResponse({ status: 401, description: '未授权' })
@@ -274,7 +277,10 @@ export class TemplatesController {
   @UseGuards(AdminGuard)
   @ApiOperation({ summary: '更新周常任务模板（仅管理员）' })
   @ApiParam({ name: 'id', description: '周常任务模板ID' })
-  @ApiBody({ type: UpdateWeeklyTaskTemplateDto, description: '周常任务模板更新信息' })
+  @ApiBody({
+    type: UpdateWeeklyTaskTemplateDto,
+    description: '周常任务模板更新信息',
+  })
   @ApiResponse({ status: 200, description: '更新成功' })
   @ApiResponse({ status: 404, description: '周常任务模板不存在' })
   @ApiResponse({ status: 401, description: '未授权' })

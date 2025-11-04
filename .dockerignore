@@ -1,0 +1,18 @@
+# 忽略不需要进入镜像的文件与敏感信息
+node_modules
+npm-debug.log
+pnpm-lock.yaml
+.git
+.gitignore
+Dockerfile*
+.dockerignore
+coverage
+logs
+.tmp
+.cache
+.env
+.env.*
+.idea
+.vscode
+*.md
+scripts/*.sh
