@@ -46,6 +46,20 @@ import { DatabaseInitService } from './database/database-init.service';
         timezone: '+08:00', // 设置为北京时间
         charset: 'utf8mb4', // 支持完整的 UTF-8 字符集，包括 emoji
         logging: process.env.NODE_ENV === 'development', // 开发环境启用日志
+        extra: {
+          waitForConnections: true,
+          connectionLimit: parseInt(
+            configService.get<string>('DB_MAX_CONNECTIONS') || '20',
+            10,
+          ),
+          enableKeepAlive: true,
+          keepAliveInitialDelay: 0,
+          connectTimeout: parseInt(
+            configService.get<string>('DB_CONNECTION_TIMEOUT') || '60000',
+            10,
+          ),
+          queueLimit: 0,
+        },
       }),
       inject: [ConfigService],
     }),

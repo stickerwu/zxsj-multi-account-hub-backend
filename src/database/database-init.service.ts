@@ -53,6 +53,7 @@ export class DatabaseInitService {
 
       // 无论是否缺表，均在启动时执行管理员账号验证与同步，确保与 .env 配置一致
       await this.verifyAndSyncDefaultAdmin();
+      this.startDbKeepAlive();
     } catch (error) {
       this.logger.error('数据库初始化失败:', error);
       throw error;
@@ -205,6 +206,19 @@ export class DatabaseInitService {
         [task.templateId, task.taskName, task.targetCount],
       );
     }
+  }
+
+  private startDbKeepAlive(): void {
+    const interval = parseInt(
+      this.configService.get<string>('DB_IDLE_TIMEOUT') || '300000',
+      10,
+    );
+    const timer = setInterval(() => {
+      void this.dataSource
+        .query('SELECT 1')
+        .catch(() => this.logger.warn('数据库 keep-alive 失败'));
+    }, interval);
+    timer.unref();
   }
 
   /**
