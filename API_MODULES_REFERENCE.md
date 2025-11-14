@@ -170,7 +170,7 @@ interface CreateAccountDto {
 // 账号信息
 interface Account {
   accountId: string;
-  accountName: string;
+  name: string;
   userId: string;
   isActive: boolean;
   createdAt: string;
@@ -252,11 +252,12 @@ class AccountService {
   }
 
   // 获取所有账号（管理员）
-  static async getAllAccounts(page = 1, size = 20, search = '', isActive = null) {
+  static async getAllAccounts(page = 1, size = 20, search = '', isActive = null, userId = '') {
     const token = localStorage.getItem('access_token');
     const params = new URLSearchParams({ page, size });
     if (search) params.append('search', search);
     if (isActive !== null) params.append('isActive', isActive);
+    if (userId) params.append('userId', userId);
     
     const response = await fetch(`${API_BASE_URL}/accounts/admin/all?${params}`, {
       headers: { 'Authorization': `Bearer ${token}` }
@@ -500,7 +501,7 @@ class ProgressService {
 
   // 处理进度数据，计算完成统计
   static processProgressData(progressData, dungeonTemplates, taskTemplates) {
-    return progressData.items.map(progress => {
+    return progressData.data.map(progress => {
       // 计算副本完成情况
       const dungeonStats = {};
       
@@ -552,8 +553,8 @@ class ProgressService {
       // 处理数据
       const processedProgress = this.processProgressData(
         progressData,
-        dungeonTemplates.items,
-        taskTemplates.items
+        dungeonTemplates.data,
+        taskTemplates.data
       );
 
       // 计算总体统计
@@ -1009,8 +1010,8 @@ class AccountManagementComponent {
         search
       );
       
-      this.accounts = result.items;
-      this.pagination.total = result.total;
+      this.accounts = result.data;
+      this.pagination.total = result.pagination.total;
     } catch (error) {
       ErrorHandler.handleApiError(error);
     } finally {
