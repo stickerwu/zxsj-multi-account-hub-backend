@@ -110,7 +110,7 @@ export class AuthController {
   @ApiOperation({ summary: '分页获取所有用户列表（管理员专用）' })
   @ApiQuery({ name: 'page', required: false, description: '页码', example: 1 })
   @ApiQuery({
-    name: 'limit',
+    name: 'size',
     required: false,
     description: '每页数量',
     example: 10,
@@ -153,7 +153,13 @@ export class AuthController {
   })
   @ApiResponse({ status: 401, description: '未授权' })
   @ApiResponse({ status: 403, description: '权限不足' })
-  async findAllUsers(@Query() userListDto: UserListDto) {
+  async findAllUsers(
+    @Query() userListDto: UserListDto,
+    @Query('limit') limit?: number,
+  ) {
+    if (limit) {
+      (userListDto as any).size = Number(limit);
+    }
     const result = await this.authService.findUsersWithPagination(userListDto);
     return {
       code: 200,

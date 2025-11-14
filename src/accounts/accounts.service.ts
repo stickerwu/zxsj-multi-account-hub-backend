@@ -207,6 +207,7 @@ export class AccountsService {
    */
   async findAllAccountsWithPagination(
     accountListDto: AccountListDto,
+    userId?: string,
   ): Promise<PaginatedResponse<AccountWithUserDto>> {
     const { page = 1, size = 10, search, isActive } = accountListDto;
     const skip = (page - 1) * size;
@@ -215,12 +216,23 @@ export class AccountsService {
       .createQueryBuilder('account')
       .leftJoinAndSelect('account.user', 'user');
 
+    if (userId) {
+      queryBuilder.where('account.userId = :userId', { userId });
+    }
+
     // 搜索条件
     if (search) {
-      queryBuilder.where(
-        '(account.name LIKE :search OR user.username LIKE :search OR user.email LIKE :search)',
-        { search: `%${search}%` },
-      );
+      if (userId) {
+        queryBuilder.andWhere(
+          '(account.name LIKE :search OR user.username LIKE :search OR user.email LIKE :search)',
+          { search: `%${search}%` },
+        );
+      } else {
+        queryBuilder.where(
+          '(account.name LIKE :search OR user.username LIKE :search OR user.email LIKE :search)',
+          { search: `%${search}%` },
+        );
+      }
     }
 
     // 状态筛选

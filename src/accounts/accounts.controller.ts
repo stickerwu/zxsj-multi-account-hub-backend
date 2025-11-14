@@ -74,7 +74,7 @@ export class AccountsController {
     example: 1,
   })
   @ApiQuery({
-    name: 'limit',
+    name: 'size',
     required: false,
     type: Number,
     description: '每页数量，默认为10',
@@ -121,7 +121,29 @@ export class AccountsController {
   async findAll(
     @Request() req: AuthenticatedRequest,
     @Query() accountListDto: AccountListDto,
+    @Query('limit') limit?: number,
+    @Query('scope') scope?: string,
   ) {
+    if (limit) {
+      accountListDto.size = Number(limit);
+    }
+    if (scope === 'all' && (req as any).user?.role === 'admin') {
+      const result =
+        await this.accountsService.findAllAccountsWithPagination(
+          accountListDto,
+        );
+      return {
+        code: 200,
+        message: '获取成功',
+        data: result.items,
+        pagination: {
+          total: result.total,
+          page: result.page,
+          limit: result.size,
+          totalPages: Math.ceil(result.total / result.size),
+        },
+      };
+    }
     const result = await this.accountsService.findAccountsWithPaginationByUser(
       req.user.userId,
       accountListDto,
@@ -150,7 +172,7 @@ export class AccountsController {
     example: 1,
   })
   @ApiQuery({
-    name: 'limit',
+    name: 'size',
     required: false,
     type: Number,
     description: '每页数量，默认为10',
@@ -195,9 +217,22 @@ export class AccountsController {
   })
   @ApiResponse({ status: 401, description: '未授权' })
   @ApiResponse({ status: 403, description: '权限不足' })
-  async findAllForAdmin(@Query() accountListDto: AccountListDto) {
-    const result =
-      await this.accountsService.findAllAccountsWithPagination(accountListDto);
+  async findAllForAdmin(
+    @Query() accountListDto: AccountListDto,
+    @Query('limit') limit?: number,
+    @Query('userId') userId?: string,
+  ) {
+    if (limit) {
+      accountListDto.size = Number(limit);
+    }
+    const result = userId
+      ? await this.accountsService.findAllAccountsWithPagination(
+          accountListDto,
+          userId,
+        )
+      : await this.accountsService.findAllAccountsWithPagination(
+          accountListDto,
+        );
     return {
       code: 200,
       message: '获取成功',
