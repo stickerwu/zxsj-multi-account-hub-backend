@@ -19,7 +19,7 @@
 本文档描述了诛仙世界多账号管理系统的所有 API 接口。系统基于 NestJS 框架构建，使用 JWT 进行身份认证，支持用户注册、登录、账号管理、模板管理、进度跟踪等功能。
 
 **基础信息：**
-- 基础URL: `http://localhost:3000`
+- 基础URL: `http://localhost:3000/api`
 - API版本: v1
 - 认证方式: JWT Bearer Token
 - 数据格式: JSON
@@ -97,7 +97,7 @@ Authorization: Bearer <your-jwt-token>
 
 ### 5.1 用户注册
 
-**接口地址：** `POST /auth/register`
+**接口地址：** `POST /api/auth/register`
 
 **请求参数：**
 
@@ -137,7 +137,7 @@ Authorization: Bearer <your-jwt-token>
 
 ### 5.2 用户登录
 
-**接口地址：** `POST /auth/login`
+**接口地址：** `POST /api/auth/login`
 
 **请求参数：**
 
@@ -176,7 +176,7 @@ Authorization: Bearer <your-jwt-token>
 
 ### 5.3 获取用户信息
 
-**接口地址：** `GET /auth/profile`
+**接口地址：** `GET /api/auth/profile`
 
 **认证：** 需要 JWT Token
 
@@ -200,7 +200,7 @@ Authorization: Bearer <your-jwt-token>
 
 ### 5.4 用户登出
 
-**接口地址：** `POST /auth/logout`
+**接口地址：** `POST /api/auth/logout`
 
 **认证：** 需要 JWT Token
 
@@ -215,7 +215,7 @@ Authorization: Bearer <your-jwt-token>
 
 ### 5.5 获取用户列表（管理员）
 
-**接口地址：** `GET /auth/admin/users`
+**接口地址：** `GET /api/auth/admin/users`
 
 **认证：** 需要 JWT Token + 管理员权限
 
@@ -224,7 +224,8 @@ Authorization: Bearer <your-jwt-token>
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | page | number | 否 | 页码，默认1 |
-| limit | number | 否 | 每页数量，默认10，最大100 |
+| size | number | 否 | 每页数量，默认10，最大100 |
+| limit | number | 否 | 兼容参数，与 size 等效 |
 | search | string | 否 | 搜索关键词（用户名、邮箱） |
 | role | string | 否 | 角色筛选（admin/user） |
 
@@ -248,7 +249,7 @@ Authorization: Bearer <your-jwt-token>
   "pagination": {
     "total": 1,
     "page": 1,
-    "limit": 10,
+    "size": 10,
     "totalPages": 1
   }
 }
@@ -258,7 +259,7 @@ Authorization: Bearer <your-jwt-token>
 
 ### 6.1 创建账号
 
-**接口地址：** `POST /accounts`
+**接口地址：** `POST /api/accounts`
 
 **认证：** 需要 JWT Token
 
@@ -297,7 +298,7 @@ Authorization: Bearer <your-jwt-token>
 
 ### 6.2 获取账号列表
 
-**接口地址：** `GET /accounts`
+**接口地址：** `GET /api/accounts`
 
 **认证：** 需要 JWT Token
 
@@ -306,9 +307,11 @@ Authorization: Bearer <your-jwt-token>
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | page | number | 否 | 页码，默认1 |
-| limit | number | 否 | 每页数量，默认10 |
+| size | number | 否 | 每页数量，默认10 |
+| limit | number | 否 | 兼容参数，与 size 等效 |
 | search | string | 否 | 搜索关键词（账号名） |
 | isActive | boolean | 否 | 状态筛选 |
+| scope | string | 否 | 仅管理员可用，设为 `all` 返回全量账号 |
 
 **响应示例：**
 
@@ -343,15 +346,15 @@ Authorization: Bearer <your-jwt-token>
 
 ### 6.3 获取所有账号列表（管理员）
 
-**接口地址：** `GET /accounts/admin/all`
+**接口地址：** `GET /api/accounts/admin/all`
 
 **认证：** 需要 JWT Token + 管理员权限
 
-**查询参数：** 同上
+**查询参数：** 同上，额外支持 `userId`（按指定用户过滤）
 
 ### 6.4 获取账号统计
 
-**接口地址：** `GET /accounts/stats`
+**接口地址：** `GET /api/accounts/stats`
 
 **认证：** 需要 JWT Token
 
@@ -362,16 +365,16 @@ Authorization: Bearer <your-jwt-token>
   "code": 200,
   "message": "获取成功",
   "data": {
-    "totalAccounts": 5,
-    "activeAccounts": 4,
-    "inactiveAccounts": 1
+    "totalCount": 5,
+    "activeCount": 4,
+    "inactiveCount": 1
   }
 }
 ```
 
 ### 6.5 获取账号详情
 
-**接口地址：** `GET /accounts/:id`
+**接口地址：** `GET /api/accounts/:id`
 
 **认证：** 需要 JWT Token
 
@@ -383,7 +386,7 @@ Authorization: Bearer <your-jwt-token>
 
 ### 6.6 更新账号信息
 
-**接口地址：** `PATCH /accounts/:id`
+**接口地址：** `PATCH /api/accounts/:id`
 
 **认证：** 需要 JWT Token
 
@@ -398,13 +401,13 @@ Authorization: Bearer <your-jwt-token>
 
 ### 6.7 切换账号状态
 
-**接口地址：** `PATCH /accounts/:id/toggle-status`
+**接口地址：** `PATCH /api/accounts/:id/toggle-active`
 
 **认证：** 需要 JWT Token
 
 ### 6.8 批量更新账号状态
 
-**接口地址：** `PATCH /accounts/batch-status`
+**接口地址：** `POST /api/accounts/batch-update-status`
 
 **认证：** 需要 JWT Token
 
@@ -419,7 +422,7 @@ Authorization: Bearer <your-jwt-token>
 
 ### 6.9 删除账号
 
-**接口地址：** `DELETE /accounts/:id`
+**接口地址：** `DELETE /api/accounts/:id`
 
 **认证：** 需要 JWT Token
 
@@ -638,7 +641,7 @@ Authorization: Bearer <your-jwt-token>
 
 ### 8.1 创建副本模板
 
-**接口地址：** `POST /templates/dungeons`
+**接口地址：** `POST /api/templates/dungeons`
 
 **认证：** 需要 JWT Token + 管理员权限
 
@@ -676,7 +679,7 @@ Authorization: Bearer <your-jwt-token>
 
 ### 8.2 获取副本模板列表
 
-**接口地址：** `GET /templates/dungeons`
+**接口地址：** `GET /api/templates/dungeons`
 
 **认证：** 需要 JWT Token
 
@@ -706,25 +709,25 @@ Authorization: Bearer <your-jwt-token>
 
 ### 8.3 获取副本模板详情
 
-**接口地址：** `GET /templates/dungeons/:id`
+**接口地址：** `GET /api/templates/dungeons/:id`
 
 **认证：** 需要 JWT Token
 
 ### 8.4 更新副本模板
 
-**接口地址：** `PATCH /templates/dungeons/:id`
+**接口地址：** `PATCH /api/templates/dungeons/:id`
 
 **认证：** 需要 JWT Token + 管理员权限
 
 ### 8.5 删除副本模板
 
-**接口地址：** `DELETE /templates/dungeons/:id`
+**接口地址：** `DELETE /api/templates/dungeons/:id`
 
 **认证：** 需要 JWT Token + 管理员权限
 
 ### 8.6 创建周常任务模板
 
-**接口地址：** `POST /templates/weekly-tasks`
+**接口地址：** `POST /api/templates/weekly-tasks`
 
 **认证：** 需要 JWT Token + 管理员权限
 
@@ -746,31 +749,31 @@ Authorization: Bearer <your-jwt-token>
 
 ### 8.7 获取周常任务模板列表
 
-**接口地址：** `GET /templates/weekly-tasks`
+**接口地址：** `GET /api/templates/weekly-tasks`
 
 **认证：** 需要 JWT Token
 
 ### 8.8 获取周常任务模板详情
 
-**接口地址：** `GET /templates/weekly-tasks/:id`
+**接口地址：** `GET /api/templates/weekly-tasks/:id`
 
 **认证：** 需要 JWT Token
 
 ### 8.9 更新周常任务模板
 
-**接口地址：** `PATCH /templates/weekly-tasks/:id`
+**接口地址：** `PATCH /api/templates/weekly-tasks/:id`
 
 **认证：** 需要 JWT Token + 管理员权限
 
 ### 8.10 删除周常任务模板
 
-**接口地址：** `DELETE /templates/weekly-tasks/:id`
+**接口地址：** `DELETE /api/templates/weekly-tasks/:id`
 
 **认证：** 需要 JWT Token + 管理员权限
 
 ### 8.11 获取模板统计
 
-**接口地址：** `GET /templates/stats`
+**接口地址：** `GET /api/templates/stats`
 
 **认证：** 需要 JWT Token
 
@@ -791,7 +794,7 @@ Authorization: Bearer <your-jwt-token>
 
 ### 9.1 获取当前周进度
 
-**接口地址：** `GET /progress/current-week`
+**接口地址：** `GET /api/progress/current-week`
 
 **认证：** 需要 JWT Token
 
@@ -827,13 +830,13 @@ Authorization: Bearer <your-jwt-token>
 
 ### 9.2 获取指定账号进度
 
-**接口地址：** `GET /progress/account/:accountId`
+**接口地址：** `GET /api/progress/account/:accountId`
 
 **认证：** 需要 JWT Token
 
 ### 9.3 更新副本进度
 
-**接口地址：** `PATCH /progress/dungeon`
+**接口地址：** `PATCH /api/progress/dungeon`
 
 **认证：** 需要 JWT Token
 
@@ -859,7 +862,7 @@ Authorization: Bearer <your-jwt-token>
 
 ### 9.4 更新周常任务进度
 
-**接口地址：** `PATCH /progress/weekly-task`
+**接口地址：** `PATCH /api/progress/weekly-task`
 
 **认证：** 需要 JWT Token
 
@@ -883,7 +886,7 @@ Authorization: Bearer <your-jwt-token>
 
 ### 9.5 获取进度统计
 
-**接口地址：** `GET /progress/stats`
+**接口地址：** `GET /api/progress/stats`
 
 **认证：** 需要 JWT Token
 
@@ -903,7 +906,7 @@ Authorization: Bearer <your-jwt-token>
 
 ### 9.6 获取历史周进度
 
-**接口地址：** `GET /progress/history`
+**接口地址：** `GET /api/progress/history`
 
 **认证：** 需要 JWT Token
 
@@ -916,55 +919,55 @@ Authorization: Bearer <your-jwt-token>
 
 ### 9.7 重置周进度（管理员）
 
-**接口地址：** `POST /progress/admin/reset-weekly`
+**接口地址：** `POST /api/progress/admin/reset-weekly`
 
 **认证：** 需要 JWT Token + 管理员权限
 
 ### 9.8 获取进度详情
 
-**接口地址：** `GET /progress/:id`
+**接口地址：** `GET /api/progress/:id`
 
 **认证：** 需要 JWT Token
 
 ### 9.9 批量更新进度
 
-**接口地址：** `PATCH /progress/batch-update`
+**接口地址：** `PATCH /api/progress/batch-update`
 
 **认证：** 需要 JWT Token
 
 ### 9.10 导出进度数据
 
-**接口地址：** `GET /progress/export`
+**接口地址：** `GET /api/progress/export`
 
 **认证：** 需要 JWT Token
 
 ### 9.11 获取进度趋势
 
-**接口地址：** `GET /progress/trends`
+**接口地址：** `GET /api/progress/trends`
 
 **认证：** 需要 JWT Token
 
 ### 9.12 获取账号进度排行
 
-**接口地址：** `GET /progress/rankings`
+**接口地址：** `GET /api/progress/rankings`
 
 **认证：** 需要 JWT Token
 
 ### 9.13 获取周进度汇总
 
-**接口地址：** `GET /progress/weekly-summary`
+**接口地址：** `GET /api/progress/weekly-summary`
 
 **认证：** 需要 JWT Token
 
 ### 9.14 更新进度备注
 
-**接口地址：** `PATCH /progress/:id/notes`
+**接口地址：** `PATCH /api/progress/:id/notes`
 
 **认证：** 需要 JWT Token
 
 ### 9.15 获取进度变更历史
 
-**接口地址：** `GET /progress/:id/history`
+**接口地址：** `GET /api/progress/:id/history`
 
 **认证：** 需要 JWT Token
 
@@ -972,7 +975,7 @@ Authorization: Bearer <your-jwt-token>
 
 ### 10.1 获取调度器信息
 
-**接口地址：** `GET /scheduler/info`
+**接口地址：** `GET /api/scheduler/info`
 
 **认证：** 需要 JWT Token
 
@@ -993,7 +996,7 @@ Authorization: Bearer <your-jwt-token>
 
 ### 10.2 手动触发周进度重置（管理员）
 
-**接口地址：** `POST /scheduler/trigger-weekly-reset`
+**接口地址：** `POST /api/scheduler/trigger-weekly-reset`
 
 **认证：** 需要 JWT Token + 管理员权限
 
@@ -1012,43 +1015,43 @@ Authorization: Bearer <your-jwt-token>
 
 ### 10.3 获取任务执行历史
 
-**接口地址：** `GET /scheduler/history`
+**接口地址：** `GET /api/scheduler/history`
 
 **认证：** 需要 JWT Token + 管理员权限
 
 ### 10.4 暂停调度器（管理员）
 
-**接口地址：** `POST /scheduler/pause`
+**接口地址：** `POST /api/scheduler/pause`
 
 **认证：** 需要 JWT Token + 管理员权限
 
 ### 10.5 恢复调度器（管理员）
 
-**接口地址：** `POST /scheduler/resume`
+**接口地址：** `POST /api/scheduler/resume`
 
 **认证：** 需要 JWT Token + 管理员权限
 
 ### 10.6 获取下次执行时间
 
-**接口地址：** `GET /scheduler/next-execution`
+**接口地址：** `GET /api/scheduler/next-execution`
 
 **认证：** 需要 JWT Token
 
 ### 10.7 更新调度配置（管理员）
 
-**接口地址：** `PATCH /scheduler/config`
+**接口地址：** `PATCH /api/scheduler/config`
 
 **认证：** 需要 JWT Token + 管理员权限
 
 ### 10.8 获取调度统计
 
-**接口地址：** `GET /scheduler/stats`
+**接口地址：** `GET /api/scheduler/stats`
 
 **认证：** 需要 JWT Token
 
 ### 10.9 测试调度任务（管理员）
 
-**接口地址：** `POST /scheduler/test`
+**接口地址：** `POST /api/scheduler/test`
 
 **认证：** 需要 JWT Token + 管理员权限
 
@@ -1186,7 +1189,8 @@ interface PaginatedResponse<T = any> extends ApiResponse<T[]> {
   pagination: {
     total: number;
     page: number;
-    limit: number;
+    size?: number;
+    limit?: number;
     totalPages: number;
   };
 }
