@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, Raw } from 'typeorm';
@@ -26,6 +27,8 @@ export class ProgressService {
     private sharedAccountRepository: Repository<SharedAccount>,
     private sharedAccountPermissionService: SharedAccountPermissionService,
   ) {}
+
+  private readonly logger = new Logger(ProgressService.name);
 
   private async withRetry<T>(
     fn: () => Promise<T>,
@@ -254,6 +257,7 @@ export class ProgressService {
     paginationDto: PaginationDto,
   ): Promise<PaginatedResponse<WeeklyProgress>> {
     const { page = 1, size = 10, search } = paginationDto;
+    this.logger.log(`Progress list request userId=${userId} page=${page} size=${size} search=${search ?? ''}`);
     const skip = (page - 1) * size;
     const weekStart = this.getCurrentWeekStart();
     const weekStartDate = new Date(
@@ -265,12 +269,14 @@ export class ProgressService {
       0,
       0,
     );
+    this.logger.log(`Computed weekStartDate=${weekStartDate.toISOString()}`);
 
     // 1. 获取用户的个人账号ID列表
     const accounts = await this.withRetry(() =>
       this.accountRepository.find({ where: { userId } }),
     );
     const accountIds = accounts.map((account) => account.accountId);
+    this.logger.log(`Personal accounts count=${accountIds.length}`);
 
     // 2. 获取用户有权限访问的共享账号名称列表
     const accessibleSharedAccounts =
@@ -278,6 +284,7 @@ export class ProgressService {
         userId,
         PermissionAction.READ,
       );
+    this.logger.log(`Accessible shared accounts count=${accessibleSharedAccounts.length}`);
 
     // 3. 构建查询条件
     const queryBuilder = this.weeklyProgressRepository
@@ -288,15 +295,18 @@ export class ProgressService {
 
     // 添加账号过滤条件
     if (accountIds.length > 0 && accessibleSharedAccounts.length > 0) {
+      this.logger.log('Query scope: personal + shared');
       queryBuilder.andWhere(
         '(progress.accountId IN (:...accountIds) OR progress.sharedAccountName IN (:...sharedAccountNames))',
         { accountIds, sharedAccountNames: accessibleSharedAccounts },
       );
     } else if (accountIds.length > 0) {
+      this.logger.log('Query scope: personal only');
       queryBuilder.andWhere('progress.accountId IN (:...accountIds)', {
         accountIds,
       });
     } else if (accessibleSharedAccounts.length > 0) {
+      this.logger.log('Query scope: shared only');
       queryBuilder.andWhere(
         'progress.sharedAccountName IN (:...sharedAccountNames)',
         {
@@ -304,6 +314,7 @@ export class ProgressService {
         },
       );
     } else {
+      this.logger.log('Query scope: none, return empty');
       // 用户没有任何账号，返回空结果
       return {
         total: 0,
@@ -323,9 +334,12 @@ export class ProgressService {
     }
 
     // 获取总数
+    this.logger.log('Executing count');
     const total = await this.withRetry(() => queryBuilder.getCount());
+    this.logger.log(`Count result total=${total}`);
 
     // 获取分页数据
+    this.logger.log(`Fetching items skip=${skip} take=${size}`);
     const items = await this.withRetry(() =>
       queryBuilder
         .orderBy('progress.lastUpdated', 'DESC')
@@ -333,6 +347,7 @@ export class ProgressService {
         .take(size)
         .getMany(),
     );
+    this.logger.log(`Fetched items length=${items.length}`);
 
     // 为没有进度记录的账号创建空记录（仅在第一页且无搜索时）
     if (page === 1 && !search) {
@@ -349,6 +364,9 @@ export class ProgressService {
       const missingSharedAccountNames = accessibleSharedAccounts.filter(
         (name) => !existingSharedAccountNames.includes(name),
       );
+      this.logger.log(
+        `Missing personal=${missingAccountIds.length} shared=${missingSharedAccountNames.length}`,
+      );
 
       // 创建缺失的个人账号进度记录
       for (const accountId of missingAccountIds) {
@@ -363,8 +381,8 @@ export class ProgressService {
               newProgress.account = account;
             }
             items.push(newProgress);
-          } catch {
-            // ignore creation errors for pagination stability
+          } catch (e) {
+            this.logger.warn('Create missing personal progress failed');
           }
         }
       }
@@ -386,8 +404,8 @@ export class ProgressService {
               newProgress.sharedAccount = sharedAccount;
             }
             items.push(newProgress);
-          } catch {
-            // ignore creation errors for pagination stability
+          } catch (e) {
+            this.logger.warn('Create missing shared progress failed');
           }
         }
       }
