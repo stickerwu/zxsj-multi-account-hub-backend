@@ -228,7 +228,7 @@ export class ProgressService {
     // 添加搜索条件
     if (search) {
       queryBuilder.andWhere(
-        '(account.accountName LIKE :search OR sharedAccount.accountName LIKE :search)',
+        '(account.name LIKE :search OR sharedAccount.accountName LIKE :search)',
         { search: `%${search}%` },
       );
     }

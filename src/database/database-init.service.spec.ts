@@ -71,7 +71,9 @@ describe('DatabaseInitService', () => {
         .mockResolvedValueOnce([{ count: 1 }]) // accounts 表存在
         .mockResolvedValueOnce([{ count: 1 }]) // dungeon_templates 表存在
         .mockResolvedValueOnce([{ count: 1 }]) // weekly_task_templates 表存在
-        .mockResolvedValueOnce([{ count: 1 }]); // weekly_progress 表存在
+        .mockResolvedValueOnce([{ count: 1 }]) // weekly_progress 表存在
+        .mockResolvedValueOnce([{ count: 1 }]) // shared_accounts 表存在
+        .mockResolvedValueOnce([{ count: 1 }]); // user_account_relations 表存在
 
       await service.initializeDatabase();
 
@@ -87,6 +89,8 @@ describe('DatabaseInitService', () => {
         .mockResolvedValueOnce([{ count: 0 }]) // dungeon_templates 表不存在
         .mockResolvedValueOnce([{ count: 0 }]) // weekly_task_templates 表不存在
         .mockResolvedValueOnce([{ count: 0 }]) // weekly_progress 表不存在
+        .mockResolvedValueOnce([{ count: 0 }]) // shared_accounts 表不存在
+        .mockResolvedValueOnce([{ count: 0 }]) // user_account_relations 表不存在
         .mockResolvedValue(undefined); // 其他所有查询都成功
 
       // 模拟 fs 操作
@@ -100,7 +104,7 @@ describe('DatabaseInitService', () => {
 
       expect(mockLogger.log).toHaveBeenCalledWith('开始检查数据库表结构...');
       expect(mockLogger.warn).toHaveBeenCalledWith(
-        '发现缺失的表: users, accounts, dungeon_templates, weekly_task_templates, weekly_progress',
+        '发现缺失的表: users, accounts, dungeon_templates, weekly_task_templates, weekly_progress, shared_accounts, user_account_relations',
       );
       expect(mockLogger.log).toHaveBeenCalledWith('数据库初始化完成');
     });

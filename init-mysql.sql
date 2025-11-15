@@ -8,6 +8,8 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 -- 删除现有表（如果存在）
 DROP TABLE IF EXISTS `weekly_progress`;
+DROP TABLE IF EXISTS `user_account_relations`;
+DROP TABLE IF EXISTS `shared_accounts`;
 DROP TABLE IF EXISTS `accounts`;
 DROP TABLE IF EXISTS `users`;
 DROP TABLE IF EXISTS `weekly_task_templates`;
@@ -63,19 +65,53 @@ CREATE TABLE `weekly_task_templates` (
     INDEX `IDX_weekly_task_templates_taskName` (`taskName`)
 );
 
--- 创建周常进度表
+-- 创建共享账号表
+CREATE TABLE IF NOT EXISTS `shared_accounts` (
+  `accountName` varchar(50) NOT NULL,
+  `displayName` varchar(100) NOT NULL,
+  `serverName` varchar(50) NOT NULL,
+  `isActive` tinyint NOT NULL DEFAULT '1',
+  `createdAt` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `updatedAt` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`accountName`),
+  KEY `idx_shared_accounts_server_name` (`serverName`),
+  KEY `idx_shared_accounts_is_active` (`isActive`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- 创建用户与共享账号关联表
+CREATE TABLE IF NOT EXISTS `user_account_relations` (
+  `id` varchar(36) NOT NULL,
+  `userId` varchar(36) NOT NULL,
+  `accountName` varchar(50) NOT NULL,
+  `relationType` enum('owner','contributor') NOT NULL DEFAULT 'contributor',
+  `permissions` json DEFAULT NULL,
+  `joinedAt` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_user_account_relations_user_account` (`userId`,`accountName`),
+  KEY `idx_user_account_relations_user_id` (`userId`),
+  KEY `idx_user_account_relations_account_name` (`accountName`),
+  KEY `idx_user_account_relations_relation_type` (`relationType`),
+  CONSTRAINT `fk_user_account_relations_user_id` FOREIGN KEY (`userId`) REFERENCES `users` (`userId`) ON DELETE CASCADE,
+  CONSTRAINT `fk_user_account_relations_account_name` FOREIGN KEY (`accountName`) REFERENCES `shared_accounts` (`accountName`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- 创建周常进度表（支持共享账号）
 CREATE TABLE IF NOT EXISTS `weekly_progress` (
   `progressId` varchar(36) NOT NULL,
-  `accountId` varchar(36) NOT NULL,
+  `accountId` varchar(36) NULL,
+  `sharedAccountName` varchar(50) NULL,
   `weekStart` date NOT NULL,
   `dungeonProgress` json DEFAULT NULL,
   `weeklyTaskProgress` json DEFAULT NULL,
   `lastUpdated` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   PRIMARY KEY (`progressId`),
   UNIQUE KEY `UQ_weekly_progress_account_week` (`accountId`,`weekStart`),
+  UNIQUE KEY `uk_weekly_progress_shared_account_week` (`sharedAccountName`,`weekStart`),
   KEY `IDX_weekly_progress_accountId` (`accountId`),
   KEY `IDX_weekly_progress_weekStart` (`weekStart`),
-  CONSTRAINT `FK_weekly_progress_accountId` FOREIGN KEY (`accountId`) REFERENCES `accounts` (`accountId`) ON DELETE CASCADE
+  KEY `idx_weekly_progress_shared_account_name` (`sharedAccountName`),
+  CONSTRAINT `FK_weekly_progress_accountId` FOREIGN KEY (`accountId`) REFERENCES `accounts` (`accountId`) ON DELETE CASCADE,
+  CONSTRAINT `fk_weekly_progress_shared_account_name` FOREIGN KEY (`sharedAccountName`) REFERENCES `shared_accounts` (`accountName`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- 插入默认副本模板数据

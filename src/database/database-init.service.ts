@@ -31,6 +31,8 @@ export class DatabaseInitService {
         'dungeon_templates',
         'weekly_task_templates',
         'weekly_progress',
+        'shared_accounts',
+        'user_account_relations',
       ];
 
       const missingTables: string[] = [];
