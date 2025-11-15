@@ -267,9 +267,9 @@ export class ProgressService {
     );
 
     // 1. 获取用户的个人账号ID列表
-    const accounts = await this.accountRepository.find({
-      where: { userId },
-    });
+    const accounts = await this.withRetry(() =>
+      this.accountRepository.find({ where: { userId } }),
+    );
     const accountIds = accounts.map((account) => account.accountId);
 
     // 2. 获取用户有权限访问的共享账号名称列表
@@ -377,9 +377,11 @@ export class ProgressService {
               sharedAccountName,
               weekStartDate,
             );
-            const sharedAccount = await this.sharedAccountRepository.findOne({
+          const sharedAccount = await this.withRetry(() =>
+            this.sharedAccountRepository.findOne({
               where: { accountName: sharedAccountName },
-            });
+            }),
+          );
             if (sharedAccount) {
               newProgress.sharedAccount = sharedAccount;
             }
