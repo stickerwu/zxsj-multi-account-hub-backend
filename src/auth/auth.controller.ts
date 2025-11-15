@@ -80,12 +80,12 @@ export class AuthController {
   @ApiResponse({ status: 200, description: '获取成功' })
   @ApiResponse({ status: 401, description: '未授权' })
   getProfile(@Request() req: AuthenticatedRequest) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { passwordHash, ...userWithoutPassword } = req.user;
+    const { userId, username, email, phone, role, createdAt, updatedAt } =
+      req.user;
     return {
       code: 200,
       message: '获取成功',
-      data: userWithoutPassword,
+      data: { userId, username, email, phone, role, createdAt, updatedAt },
     };
   }
 

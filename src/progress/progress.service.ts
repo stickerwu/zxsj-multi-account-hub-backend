@@ -127,33 +127,28 @@ export class ProgressService {
       0,
       0,
     );
-
-    let progress = await this.weeklyProgressRepository.findOne({
+    const existed = await this.weeklyProgressRepository.findOne({
       where: { accountId, weekStart: weekStartDate },
     });
-
-    if (!progress) {
-      try {
-        progress = this.weeklyProgressRepository.create({
-          progressId: uuidv4(),
-          accountId,
-          weekStart: weekStartDate,
-          dungeonProgress: {},
-          weeklyTaskProgress: {},
+    if (existed) return existed;
+    try {
+      const created = this.weeklyProgressRepository.create({
+        progressId: uuidv4(),
+        accountId,
+        weekStart: weekStartDate,
+        dungeonProgress: {},
+        weeklyTaskProgress: {},
+      });
+      return await this.weeklyProgressRepository.save(created);
+    } catch (e: any) {
+      if (e && e.code === 'ER_DUP_ENTRY') {
+        const fetched = await this.weeklyProgressRepository.findOne({
+          where: { accountId, weekStart: weekStartDate },
         });
-        progress = await this.weeklyProgressRepository.save(progress);
-      } catch (e: any) {
-        if (e && e.code === 'ER_DUP_ENTRY') {
-          progress = await this.weeklyProgressRepository.findOne({
-            where: { accountId, weekStart: weekStartDate },
-          });
-        } else {
-          throw e;
-        }
+        if (fetched) return fetched;
       }
+      throw e;
     }
-
-    return progress;
   }
 
   /**
@@ -172,33 +167,28 @@ export class ProgressService {
       0,
       0,
     );
-
-    let progress = await this.weeklyProgressRepository.findOne({
+    const existed = await this.weeklyProgressRepository.findOne({
       where: { sharedAccountName, weekStart: weekStartDate },
     });
-
-    if (!progress) {
-      try {
-        progress = this.weeklyProgressRepository.create({
-          progressId: uuidv4(),
-          sharedAccountName,
-          weekStart: weekStartDate,
-          dungeonProgress: {},
-          weeklyTaskProgress: {},
+    if (existed) return existed;
+    try {
+      const created = this.weeklyProgressRepository.create({
+        progressId: uuidv4(),
+        sharedAccountName,
+        weekStart: weekStartDate,
+        dungeonProgress: {},
+        weeklyTaskProgress: {},
+      });
+      return await this.weeklyProgressRepository.save(created);
+    } catch (e: any) {
+      if (e && e.code === 'ER_DUP_ENTRY') {
+        const fetched = await this.weeklyProgressRepository.findOne({
+          where: { sharedAccountName, weekStart: weekStartDate },
         });
-        progress = await this.weeklyProgressRepository.save(progress);
-      } catch (e: any) {
-        if (e && e.code === 'ER_DUP_ENTRY') {
-          progress = await this.weeklyProgressRepository.findOne({
-            where: { sharedAccountName, weekStart: weekStartDate },
-          });
-        } else {
-          throw e;
-        }
+        if (fetched) return fetched;
       }
+      throw e;
     }
-
-    return progress;
   }
 
   /**

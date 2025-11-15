@@ -1047,3 +1047,18 @@ class AccountManagementComponent {
 **适用于：** Electron 前端开发
 
 如有疑问或建议，请联系开发团队。
+// 示例响应
+// GET /api/auth/profile
+// {
+//   "code": 200,
+//   "message": "获取成功",
+//   "data": {
+//     "userId": "uuid",
+//     "username": "testuser",
+//     "email": "test@example.com",
+//     "phone": "13800138000",
+//     "role": "user",
+//     "createdAt": "2025-11-01T00:00:00.000Z",
+//     "updatedAt": "2025-11-01T00:00:00.000Z"
+//   }
+// }
