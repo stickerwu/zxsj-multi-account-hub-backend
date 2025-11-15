@@ -27,13 +27,20 @@ export class ProgressService {
     private sharedAccountPermissionService: SharedAccountPermissionService,
   ) {}
 
-  private async withRetry<T>(fn: () => Promise<T>, attempts = 2, delayMs = 150): Promise<T> {
+  private async withRetry<T>(
+    fn: () => Promise<T>,
+    attempts = 2,
+    delayMs = 150,
+  ): Promise<T> {
     let lastErr: any;
     for (let i = 0; i < attempts; i++) {
       try {
         return await fn();
       } catch (e: any) {
-        const isConnReset = e?.code === 'ECONNRESET' || e?.driverError?.code === 'ECONNRESET' || (typeof e?.message === 'string' && e.message.includes('ECONNRESET'));
+        const isConnReset =
+          e?.code === 'ECONNRESET' ||
+          e?.driverError?.code === 'ECONNRESET' ||
+          (typeof e?.message === 'string' && e.message.includes('ECONNRESET'));
         if (!isConnReset || i === attempts - 1) {
           throw e;
         }
@@ -165,12 +172,15 @@ export class ProgressService {
       });
       return await this.weeklyProgressRepository.save(created);
     } catch (e: any) {
-      const dup = e?.code === 'ER_DUP_ENTRY' || e?.driverError?.code === 'ER_DUP_ENTRY';
+      const dup =
+        e?.code === 'ER_DUP_ENTRY' || e?.driverError?.code === 'ER_DUP_ENTRY';
       if (dup) {
         const fetched = await this.weeklyProgressRepository.findOne({
           where: {
             accountId,
-            weekStart: Raw((alias) => `${alias} = :weekStart`, { weekStart: ymd }),
+            weekStart: Raw((alias) => `${alias} = :weekStart`, {
+              weekStart: ymd,
+            }),
           },
         });
         if (fetched) return fetched;
@@ -216,12 +226,15 @@ export class ProgressService {
       });
       return await this.weeklyProgressRepository.save(created);
     } catch (e: any) {
-      const dup = e?.code === 'ER_DUP_ENTRY' || e?.driverError?.code === 'ER_DUP_ENTRY';
+      const dup =
+        e?.code === 'ER_DUP_ENTRY' || e?.driverError?.code === 'ER_DUP_ENTRY';
       if (dup) {
         const fetched = await this.weeklyProgressRepository.findOne({
           where: {
             sharedAccountName,
-            weekStart: Raw((alias) => `${alias} = :weekStart`, { weekStart: ymd }),
+            weekStart: Raw((alias) => `${alias} = :weekStart`, {
+              weekStart: ymd,
+            }),
           },
         });
         if (fetched) return fetched;
@@ -314,7 +327,11 @@ export class ProgressService {
 
     // 获取分页数据
     const items = await this.withRetry(() =>
-      queryBuilder.orderBy('progress.lastUpdated', 'DESC').skip(skip).take(size).getMany(),
+      queryBuilder
+        .orderBy('progress.lastUpdated', 'DESC')
+        .skip(skip)
+        .take(size)
+        .getMany(),
     );
 
     // 为没有进度记录的账号创建空记录（仅在第一页且无搜索时）
