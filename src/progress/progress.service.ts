@@ -4,7 +4,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, Raw } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { WeeklyProgress } from '../entities/weekly-progress.entity';
 import { Account } from '../entities/account.entity';
@@ -26,6 +26,23 @@ export class ProgressService {
     private sharedAccountRepository: Repository<SharedAccount>,
     private sharedAccountPermissionService: SharedAccountPermissionService,
   ) {}
+
+  private async withRetry<T>(fn: () => Promise<T>, attempts = 2, delayMs = 150): Promise<T> {
+    let lastErr: any;
+    for (let i = 0; i < attempts; i++) {
+      try {
+        return await fn();
+      } catch (e: any) {
+        const isConnReset = e?.code === 'ECONNRESET' || e?.driverError?.code === 'ECONNRESET' || (typeof e?.message === 'string' && e.message.includes('ECONNRESET'));
+        if (!isConnReset || i === attempts - 1) {
+          throw e;
+        }
+        lastErr = e;
+        await new Promise((r) => setTimeout(r, delayMs));
+      }
+    }
+    throw lastErr;
+  }
 
   /**
    * 获取当前周的开始时间（周三 8:00 AM）
@@ -127,8 +144,15 @@ export class ProgressService {
       0,
       0,
     );
+    const y = weekStartDate.getFullYear();
+    const m = String(weekStartDate.getMonth() + 1).padStart(2, '0');
+    const d = String(weekStartDate.getDate()).padStart(2, '0');
+    const ymd = `${y}-${m}-${d}`;
     const existed = await this.weeklyProgressRepository.findOne({
-      where: { accountId, weekStart: weekStartDate },
+      where: {
+        accountId,
+        weekStart: Raw((alias) => `${alias} = :weekStart`, { weekStart: ymd }),
+      },
     });
     if (existed) return existed;
     try {
@@ -144,7 +168,10 @@ export class ProgressService {
       const dup = e?.code === 'ER_DUP_ENTRY' || e?.driverError?.code === 'ER_DUP_ENTRY';
       if (dup) {
         const fetched = await this.weeklyProgressRepository.findOne({
-          where: { accountId, weekStart: weekStartDate },
+          where: {
+            accountId,
+            weekStart: Raw((alias) => `${alias} = :weekStart`, { weekStart: ymd }),
+          },
         });
         if (fetched) return fetched;
       }
@@ -168,8 +195,15 @@ export class ProgressService {
       0,
       0,
     );
+    const y = weekStartDate.getFullYear();
+    const m = String(weekStartDate.getMonth() + 1).padStart(2, '0');
+    const d = String(weekStartDate.getDate()).padStart(2, '0');
+    const ymd = `${y}-${m}-${d}`;
     const existed = await this.weeklyProgressRepository.findOne({
-      where: { sharedAccountName, weekStart: weekStartDate },
+      where: {
+        sharedAccountName,
+        weekStart: Raw((alias) => `${alias} = :weekStart`, { weekStart: ymd }),
+      },
     });
     if (existed) return existed;
     try {
@@ -185,7 +219,10 @@ export class ProgressService {
       const dup = e?.code === 'ER_DUP_ENTRY' || e?.driverError?.code === 'ER_DUP_ENTRY';
       if (dup) {
         const fetched = await this.weeklyProgressRepository.findOne({
-          where: { sharedAccountName, weekStart: weekStartDate },
+          where: {
+            sharedAccountName,
+            weekStart: Raw((alias) => `${alias} = :weekStart`, { weekStart: ymd }),
+          },
         });
         if (fetched) return fetched;
       }
@@ -206,6 +243,15 @@ export class ProgressService {
     const { page = 1, size = 10, search } = paginationDto;
     const skip = (page - 1) * size;
     const weekStart = this.getCurrentWeekStart();
+    const weekStartDate = new Date(
+      weekStart.getFullYear(),
+      weekStart.getMonth(),
+      weekStart.getDate(),
+      0,
+      0,
+      0,
+      0,
+    );
 
     // 1. 获取用户的个人账号ID列表
     const accounts = await this.accountRepository.find({
@@ -225,7 +271,7 @@ export class ProgressService {
       .createQueryBuilder('progress')
       .leftJoinAndSelect('progress.account', 'account')
       .leftJoinAndSelect('progress.sharedAccount', 'sharedAccount')
-      .where('progress.weekStart = :weekStart', { weekStart });
+      .where('progress.weekStart = :weekStart', { weekStart: weekStartDate });
 
     // 添加账号过滤条件
     if (accountIds.length > 0 && accessibleSharedAccounts.length > 0) {
@@ -264,14 +310,12 @@ export class ProgressService {
     }
 
     // 获取总数
-    const total = await queryBuilder.getCount();
+    const total = await this.withRetry(() => queryBuilder.getCount());
 
     // 获取分页数据
-    const items = await queryBuilder
-      .orderBy('progress.lastUpdated', 'DESC')
-      .skip(skip)
-      .take(size)
-      .getMany();
+    const items = await this.withRetry(() =>
+      queryBuilder.orderBy('progress.lastUpdated', 'DESC').skip(skip).take(size).getMany(),
+    );
 
     // 为没有进度记录的账号创建空记录（仅在第一页且无搜索时）
     if (page === 1 && !search) {
@@ -292,32 +336,40 @@ export class ProgressService {
       // 创建缺失的个人账号进度记录
       for (const accountId of missingAccountIds) {
         if (items.length < size) {
-          const newProgress = await this.getOrCreateWeeklyProgress(
-            accountId,
-            weekStart,
-          );
-          const account = accounts.find((acc) => acc.accountId === accountId);
-          if (account) {
-            newProgress.account = account;
+          try {
+            const newProgress = await this.getOrCreateWeeklyProgress(
+              accountId,
+              weekStartDate,
+            );
+            const account = accounts.find((acc) => acc.accountId === accountId);
+            if (account) {
+              newProgress.account = account;
+            }
+            items.push(newProgress);
+          } catch {
+            // ignore creation errors for pagination stability
           }
-          items.push(newProgress);
         }
       }
 
       // 创建缺失的共享账号进度记录
       for (const sharedAccountName of missingSharedAccountNames) {
         if (items.length < size) {
-          const newProgress = await this.getOrCreateSharedWeeklyProgress(
-            sharedAccountName,
-            weekStart,
-          );
-          const sharedAccount = await this.sharedAccountRepository.findOne({
-            where: { accountName: sharedAccountName },
-          });
-          if (sharedAccount) {
-            newProgress.sharedAccount = sharedAccount;
+          try {
+            const newProgress = await this.getOrCreateSharedWeeklyProgress(
+              sharedAccountName,
+              weekStartDate,
+            );
+            const sharedAccount = await this.sharedAccountRepository.findOne({
+              where: { accountName: sharedAccountName },
+            });
+            if (sharedAccount) {
+              newProgress.sharedAccount = sharedAccount;
+            }
+            items.push(newProgress);
+          } catch {
+            // ignore creation errors for pagination stability
           }
-          items.push(newProgress);
         }
       }
     }
