@@ -8,6 +8,7 @@ import { RegisterDto } from './dto/register.dto';
 import { JwtPayload } from './strategies/jwt.strategy';
 import { UserListDto, UserResponseDto } from './dto/user-list.dto';
 import { PaginatedResponse } from '../common/dto/pagination.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class AuthService {
@@ -181,5 +182,45 @@ export class AuthService {
     }));
 
     return new PaginatedResponse(userResponseDtos, total, page, size);
+  }
+
+  async updateProfile(
+    userId: string,
+    dto: UpdateProfileDto,
+  ): Promise<Partial<User>> {
+    const user = await this.userRepository.findOne({ where: { userId } });
+    if (!user) {
+      throw new ConflictException('用户不存在');
+    }
+
+    const { username, email, phone } = dto;
+
+    if (username) {
+      const exist = await this.userRepository.findOne({ where: { username } });
+      if (exist && exist.userId !== userId) {
+        throw new ConflictException('用户名已存在');
+      }
+      user.username = username;
+    }
+
+    if (email) {
+      const exist = await this.userRepository.findOne({ where: { email } });
+      if (exist && exist.userId !== userId) {
+        throw new ConflictException('邮箱已被注册');
+      }
+      user.email = email;
+    }
+
+    if (phone) {
+      const exist = await this.userRepository.findOne({ where: { phone } });
+      if (exist && exist.userId !== userId) {
+        throw new ConflictException('手机号已被注册');
+      }
+      user.phone = phone;
+    }
+
+    const saved = await this.userRepository.save(user);
+    const { passwordHash, ...sanitized } = saved as any;
+    return sanitized;
   }
 }

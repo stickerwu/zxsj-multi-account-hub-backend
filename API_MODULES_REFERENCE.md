@@ -44,6 +44,7 @@ const checkSystemHealth = async () => {
 | POST | `/auth/register` | 用户注册 | ❌ | - |
 | POST | `/auth/login` | 用户登录 | ❌ | - |
 | GET | `/auth/profile` | 获取当前用户信息 | ✅ | User |
+| PATCH | `/auth/profile` | 更新当前用户信息 | ✅ | User |
 | GET | `/auth/admin/users` | 获取所有用户列表 | ✅ | Admin |
 
 ### 数据模型
@@ -110,6 +111,17 @@ class AuthService {
     const token = localStorage.getItem('access_token');
     const response = await fetch(`${API_BASE_URL}/auth/profile`, {
       headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return await response.json();
+  }
+
+  // 更新当前用户信息
+  static async updateProfile(updateData) {
+    const token = localStorage.getItem('access_token');
+    const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(updateData),
     });
     return await response.json();
   }

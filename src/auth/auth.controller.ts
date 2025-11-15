@@ -6,6 +6,7 @@ import {
   Request,
   Get,
   Query,
+  Patch,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -23,6 +24,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AdminGuard } from './guards/admin.guard';
 import { User } from '../entities/user.entity';
 import { UserListDto } from './dto/user-list.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 // 定义认证后的请求接口
 interface AuthenticatedRequest {
@@ -86,6 +88,24 @@ export class AuthController {
       code: 200,
       message: '获取成功',
       data: { userId, username, email, phone, role, createdAt, updatedAt },
+    };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('profile')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '更新当前用户信息' })
+  @ApiBody({ type: UpdateProfileDto, description: '可修改的用户信息' })
+  @ApiResponse({ status: 200, description: '更新成功' })
+  async updateProfile(
+    @Request() req: AuthenticatedRequest,
+    @Body() dto: UpdateProfileDto,
+  ) {
+    const data = await this.authService.updateProfile(req.user.userId, dto);
+    return {
+      code: 200,
+      message: '更新成功',
+      data,
     };
   }
 
