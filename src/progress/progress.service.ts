@@ -141,7 +141,8 @@ export class ProgressService {
       });
       return await this.weeklyProgressRepository.save(created);
     } catch (e: any) {
-      if (e && e.code === 'ER_DUP_ENTRY') {
+      const dup = e?.code === 'ER_DUP_ENTRY' || e?.driverError?.code === 'ER_DUP_ENTRY';
+      if (dup) {
         const fetched = await this.weeklyProgressRepository.findOne({
           where: { accountId, weekStart: weekStartDate },
         });
@@ -181,7 +182,8 @@ export class ProgressService {
       });
       return await this.weeklyProgressRepository.save(created);
     } catch (e: any) {
-      if (e && e.code === 'ER_DUP_ENTRY') {
+      const dup = e?.code === 'ER_DUP_ENTRY' || e?.driverError?.code === 'ER_DUP_ENTRY';
+      if (dup) {
         const fetched = await this.weeklyProgressRepository.findOne({
           where: { sharedAccountName, weekStart: weekStartDate },
         });
