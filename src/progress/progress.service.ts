@@ -257,7 +257,9 @@ export class ProgressService {
     paginationDto: PaginationDto,
   ): Promise<PaginatedResponse<WeeklyProgress>> {
     const { page = 1, size = 10, search } = paginationDto;
-    this.logger.log(`Progress list request userId=${userId} page=${page} size=${size} search=${search ?? ''}`);
+    this.logger.log(
+      `Progress list request userId=${userId} page=${page} size=${size} search=${search ?? ''}`,
+    );
     const skip = (page - 1) * size;
     const weekStart = this.getCurrentWeekStart();
     const weekStartDate = new Date(
@@ -284,7 +286,9 @@ export class ProgressService {
         userId,
         PermissionAction.READ,
       );
-    this.logger.log(`Accessible shared accounts count=${accessibleSharedAccounts.length}`);
+    this.logger.log(
+      `Accessible shared accounts count=${accessibleSharedAccounts.length}`,
+    );
 
     // 3. 构建查询条件
     const queryBuilder = this.weeklyProgressRepository
@@ -395,11 +399,11 @@ export class ProgressService {
               sharedAccountName,
               weekStartDate,
             );
-          const sharedAccount = await this.withRetry(() =>
-            this.sharedAccountRepository.findOne({
-              where: { accountName: sharedAccountName },
-            }),
-          );
+            const sharedAccount = await this.withRetry(() =>
+              this.sharedAccountRepository.findOne({
+                where: { accountName: sharedAccountName },
+              }),
+            );
             if (sharedAccount) {
               newProgress.sharedAccount = sharedAccount;
             }

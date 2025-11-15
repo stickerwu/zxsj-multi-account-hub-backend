@@ -23,13 +23,20 @@ export class SharedAccountPermissionService {
     private readonly userAccountRelationRepository: Repository<UserAccountRelation>,
   ) {}
 
-  private async withRetry<T>(fn: () => Promise<T>, attempts = 2, delayMs = 150): Promise<T> {
+  private async withRetry<T>(
+    fn: () => Promise<T>,
+    attempts = 2,
+    delayMs = 150,
+  ): Promise<T> {
     let lastErr: any;
     for (let i = 0; i < attempts; i++) {
       try {
         return await fn();
       } catch (e: any) {
-        const isConnReset = e?.code === 'ECONNRESET' || e?.driverError?.code === 'ECONNRESET' || (typeof e?.message === 'string' && e.message.includes('ECONNRESET'));
+        const isConnReset =
+          e?.code === 'ECONNRESET' ||
+          e?.driverError?.code === 'ECONNRESET' ||
+          (typeof e?.message === 'string' && e.message.includes('ECONNRESET'));
         if (!isConnReset || i === attempts - 1) {
           throw e;
         }
@@ -54,12 +61,14 @@ export class SharedAccountPermissionService {
   ): Promise<PermissionCheckResult> {
     try {
       // 查找用户与共享账号的关联关系
-      const relation = await this.withRetry(() => this.userAccountRelationRepository.findOne({
-        where: {
-          userId,
-          accountName,
-        },
-      }));
+      const relation = await this.withRetry(() =>
+        this.userAccountRelationRepository.findOne({
+          where: {
+            userId,
+            accountName,
+          },
+        }),
+      );
 
       if (!relation) {
         return {
@@ -100,13 +109,15 @@ export class SharedAccountPermissionService {
    */
   async isOwner(userId: string, accountName: string): Promise<boolean> {
     try {
-      const relation = await this.withRetry(() => this.userAccountRelationRepository.findOne({
-        where: {
-          userId,
-          accountName,
-          relationType: RelationType.OWNER,
-        },
-      }));
+      const relation = await this.withRetry(() =>
+        this.userAccountRelationRepository.findOne({
+          where: {
+            userId,
+            accountName,
+            relationType: RelationType.OWNER,
+          },
+        }),
+      );
 
       return !!relation;
     } catch (error) {
@@ -211,7 +222,9 @@ export class SharedAccountPermissionService {
     action: PermissionAction = PermissionAction.READ,
   ): Promise<string[]> {
     try {
-      const relations = await this.withRetry(() => this.userAccountRelationRepository.find({ where: { userId } }));
+      const relations = await this.withRetry(() =>
+        this.userAccountRelationRepository.find({ where: { userId } }),
+      );
 
       const accessibleAccounts: string[] = [];
 

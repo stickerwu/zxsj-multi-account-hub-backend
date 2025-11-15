@@ -19,13 +19,20 @@ export class TemplatesService {
     private weeklyTaskTemplateRepository: Repository<WeeklyTaskTemplate>,
   ) {}
 
-  private async withRetry<T>(fn: () => Promise<T>, attempts = 2, delayMs = 150): Promise<T> {
+  private async withRetry<T>(
+    fn: () => Promise<T>,
+    attempts = 2,
+    delayMs = 150,
+  ): Promise<T> {
     let lastErr: any;
     for (let i = 0; i < attempts; i++) {
       try {
         return await fn();
       } catch (e: any) {
-        const isConnReset = e?.code === 'ECONNRESET' || e?.driverError?.code === 'ECONNRESET' || (typeof e?.message === 'string' && e.message.includes('ECONNRESET'));
+        const isConnReset =
+          e?.code === 'ECONNRESET' ||
+          e?.driverError?.code === 'ECONNRESET' ||
+          (typeof e?.message === 'string' && e.message.includes('ECONNRESET'));
         if (!isConnReset || i === attempts - 1) {
           throw e;
         }
@@ -206,7 +213,9 @@ export class TemplatesService {
     Object.assign(template, updateWeeklyTaskTemplateDto);
     template.updatedAt = new Date();
 
-    return this.withRetry(() => this.weeklyTaskTemplateRepository.save(template));
+    return this.withRetry(() =>
+      this.weeklyTaskTemplateRepository.save(template),
+    );
   }
 
   /**
@@ -214,7 +223,9 @@ export class TemplatesService {
    */
   async removeWeeklyTaskTemplate(templateId: string): Promise<void> {
     const template = await this.findWeeklyTaskTemplateById(templateId);
-    await this.withRetry(() => this.weeklyTaskTemplateRepository.remove(template));
+    await this.withRetry(() =>
+      this.weeklyTaskTemplateRepository.remove(template),
+    );
   }
 
   /**
