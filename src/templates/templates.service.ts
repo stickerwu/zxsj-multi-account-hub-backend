@@ -19,6 +19,23 @@ export class TemplatesService {
     private weeklyTaskTemplateRepository: Repository<WeeklyTaskTemplate>,
   ) {}
 
+  private async withRetry<T>(fn: () => Promise<T>, attempts = 2, delayMs = 150): Promise<T> {
+    let lastErr: any;
+    for (let i = 0; i < attempts; i++) {
+      try {
+        return await fn();
+      } catch (e: any) {
+        const isConnReset = e?.code === 'ECONNRESET' || e?.driverError?.code === 'ECONNRESET' || (typeof e?.message === 'string' && e.message.includes('ECONNRESET'));
+        if (!isConnReset || i === attempts - 1) {
+          throw e;
+        }
+        lastErr = e;
+        await new Promise((r) => setTimeout(r, delayMs));
+      }
+    }
+    throw lastErr;
+  }
+
   // ==================== 副本模板管理 ====================
 
   /**
@@ -57,10 +74,9 @@ export class TemplatesService {
     }
 
     // 获取总数和分页数据
-    const [items, total] = await queryBuilder
-      .skip(skip)
-      .take(size)
-      .getManyAndCount();
+    const [items, total] = await this.withRetry(() =>
+      queryBuilder.skip(skip).take(size).getManyAndCount(),
+    );
 
     return new PaginatedResponse(items, total, page, size);
   }
@@ -69,9 +85,9 @@ export class TemplatesService {
    * 根据ID获取副本模板
    */
   async findDungeonTemplateById(templateId: string): Promise<DungeonTemplate> {
-    const template = await this.dungeonTemplateRepository.findOne({
-      where: { templateId },
-    });
+    const template = await this.withRetry(() =>
+      this.dungeonTemplateRepository.findOne({ where: { templateId } }),
+    );
 
     if (!template) {
       throw new NotFoundException('副本模板不存在');
@@ -92,7 +108,7 @@ export class TemplatesService {
     Object.assign(template, updateDungeonTemplateDto);
     template.updatedAt = new Date();
 
-    return this.dungeonTemplateRepository.save(template);
+    return this.withRetry(() => this.dungeonTemplateRepository.save(template));
   }
 
   /**
@@ -100,7 +116,7 @@ export class TemplatesService {
    */
   async removeDungeonTemplate(templateId: string): Promise<void> {
     const template = await this.findDungeonTemplateById(templateId);
-    await this.dungeonTemplateRepository.remove(template);
+    await this.withRetry(() => this.dungeonTemplateRepository.remove(template));
   }
 
   /**
@@ -154,10 +170,9 @@ export class TemplatesService {
     }
 
     // 获取总数和分页数据
-    const [items, total] = await queryBuilder
-      .skip(skip)
-      .take(size)
-      .getManyAndCount();
+    const [items, total] = await this.withRetry(() =>
+      queryBuilder.skip(skip).take(size).getManyAndCount(),
+    );
 
     return new PaginatedResponse(items, total, page, size);
   }
@@ -168,9 +183,9 @@ export class TemplatesService {
   async findWeeklyTaskTemplateById(
     templateId: string,
   ): Promise<WeeklyTaskTemplate> {
-    const template = await this.weeklyTaskTemplateRepository.findOne({
-      where: { templateId },
-    });
+    const template = await this.withRetry(() =>
+      this.weeklyTaskTemplateRepository.findOne({ where: { templateId } }),
+    );
 
     if (!template) {
       throw new NotFoundException('周常任务模板不存在');
@@ -191,7 +206,7 @@ export class TemplatesService {
     Object.assign(template, updateWeeklyTaskTemplateDto);
     template.updatedAt = new Date();
 
-    return this.weeklyTaskTemplateRepository.save(template);
+    return this.withRetry(() => this.weeklyTaskTemplateRepository.save(template));
   }
 
   /**
@@ -199,7 +214,7 @@ export class TemplatesService {
    */
   async removeWeeklyTaskTemplate(templateId: string): Promise<void> {
     const template = await this.findWeeklyTaskTemplateById(templateId);
-    await this.weeklyTaskTemplateRepository.remove(template);
+    await this.withRetry(() => this.weeklyTaskTemplateRepository.remove(template));
   }
 
   /**
@@ -225,8 +240,8 @@ export class TemplatesService {
     weeklyTaskTemplateCount: number;
   }> {
     const [dungeonTemplateCount, weeklyTaskTemplateCount] = await Promise.all([
-      this.dungeonTemplateRepository.count(),
-      this.weeklyTaskTemplateRepository.count(),
+      this.withRetry(() => this.dungeonTemplateRepository.count()),
+      this.withRetry(() => this.weeklyTaskTemplateRepository.count()),
     ]);
 
     return {
